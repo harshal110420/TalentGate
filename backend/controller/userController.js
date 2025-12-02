@@ -10,8 +10,17 @@ const { User, Role, Department } = DashMatrixDB;
 // @route   POST /api/users
 // @access  Private
 const createUser = asyncHandler(async (req, res) => {
-  const { username, password, mail, mobile, roleId, departmentId, isActive } =
-    req.body;
+  const {
+    username,
+    firstName,
+    lastName,
+    password,
+    mail,
+    mobile,
+    roleId,
+    departmentId,
+    isActive,
+  } = req.body;
   console.log("🔍 Checking duplicate for:", { username, mail });
 
   // Check if username or mail already exists
@@ -28,6 +37,8 @@ const createUser = asyncHandler(async (req, res) => {
   // Create user with logged-in user's ID as creator
   const user = await User.create({
     username,
+    firstName,
+    lastName,
     password: hashedPassword,
     mail,
     mobile,
@@ -98,8 +109,17 @@ const updateUser = asyncHandler(async (req, res) => {
   const userId = req.params.id;
   console.log("🔍 Updating user with ID:", userId);
 
-  const { username, password, mail, mobile, roleId, departmentId, isActive } =
-    req.body;
+  const {
+    username,
+    firstName,
+    lastName,
+    password,
+    mail,
+    mobile,
+    roleId,
+    departmentId,
+    isActive,
+  } = req.body;
 
   const user = await User.findByPk(userId);
   if (!user) return res.status(404).json({ message: "User not found" });
@@ -114,6 +134,8 @@ const updateUser = asyncHandler(async (req, res) => {
   // Prepare fields to update
   const updatedFields = {
     username,
+    firstName,
+    lastName,
     mail,
     mobile,
     roleId: parseInt(roleId),

@@ -10,6 +10,14 @@ module.exports = () => {
         primaryKey: true,
         autoIncrement: true,
       },
+      firstName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      lastName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       username: {
         type: DataTypes.STRING,
         unique: true,

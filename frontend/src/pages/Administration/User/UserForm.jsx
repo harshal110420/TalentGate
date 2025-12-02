@@ -17,6 +17,8 @@ import FormActionButtons from "../../../components/common/FormActionButtons";
 const initialFormData = {
   mail: "",
   username: "",
+  firstName: "",
+  lastName: "",
   password: "",
   roleId: "",
   mobile: "",
@@ -57,6 +59,8 @@ const UserForm = () => {
       setFormData({
         mail: selectedUser.mail || "",
         username: selectedUser.username || "",
+        firstName: selectedUser.firstName || "",
+        lastName: selectedUser.lastName || "",
         password: "",
         mobile: selectedUser.mobile || "",
         roleId: selectedUser.roleId?.toString() || "",
@@ -145,6 +149,40 @@ const UserForm = () => {
                       id="username"
                       name="username"
                       value={formData.username}
+                      onChange={handleChange}
+                      required
+                      className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="firstName"
+                      className="block mb-1 text-gray-700 dark:text-gray-100 text-sm"
+                    >
+                      First name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      required
+                      className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="lastName"
+                      className="block mb-1 text-gray-700 dark:text-gray-100 text-sm"
+                    >
+                      Last name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      name="lastName"
+                      value={formData.lastName}
                       onChange={handleChange}
                       required
                       className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"

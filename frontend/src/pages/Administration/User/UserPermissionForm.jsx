@@ -242,7 +242,7 @@ const UserPermissionForm = ({ selectedUser, onClose }) => {
             <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 {/* <span>Role:</span> */}
                 <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-sm font-medium">
-                    {selectedUser.username}
+                    {selectedUser.firstName} {selectedUser.lastName}
                 </span>
             </h1>
 
