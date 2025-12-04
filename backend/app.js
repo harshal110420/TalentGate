@@ -17,7 +17,7 @@ const candidateRoute = require("./routes/candidateRoute");
 const examRoutes = require("./routes/examRoutes");
 const examResultRoutes = require("./routes/examResultRoutes");
 // const websiteCareerRoutes = require("./routes/websiteCareerRoutes");
-
+const jobOpeningRoutes = require("./routes/HR_Routes/jobOpeningRoutes");
 dotenv.config();
 
 const app = express();
@@ -47,7 +47,7 @@ app.use("/api/candidate", candidateRoute); // Candidate-related routes
 app.use("/api/exam", examRoutes); // Exam-related routes
 app.use("/api/exam_results", examResultRoutes); // Exam Result-related routes
 // app.use("/api/website/careers", websiteCareerRoutes);
-
+app.use("/api/job-openings", jobOpeningRoutes); // Job Opening-related routes
 // Test route
 app.get("/", (req, res) => {
   res.send("Server is running!");

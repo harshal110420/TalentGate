@@ -20,6 +20,7 @@ import examResultDetailReducer from "../features/Exams/examResultDetailSlice";
 import careerApplicationReducer from "../features/career_application/careerApplicationSlice";
 import examResultPDFReducer from "../features/Exams/examResultPdfSlice";
 import userPermissionReducer from "../features/UserPermission/userPermissionSlice";
+import jobOpeningReducer from "../features/HR_Slices/jobOpening/jobOpeningSlice";
 
 const rootReducer = combineReducers({
   permission: permissionReducer,
@@ -39,6 +40,7 @@ const rootReducer = combineReducers({
   examResultDetail: examResultDetailReducer,
   careerApplication: careerApplicationReducer,
   examResultPdf: examResultPDFReducer,
+  jobOpening: jobOpeningReducer,
 });
 
 const persistConfig = {

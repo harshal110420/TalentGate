@@ -36,6 +36,9 @@ import ExamResultResponsePage from "../pages/Examination/Exam Result/ExamResultR
 import CareerApplication from "../pages/Examination/Career Application/CareerApplication";
 import QuestionDetailPage from "../pages/Examination/Question/QuestionDetailPage";
 import UserPermissionWrapper from "../pages/Administration/User/UserPermissionWrapper";
+import JobOpeningPage from "../pages/HumanResource/JobOpening/jobOpeningPage";
+import JobOpeningForm from "../pages/HumanResource/JobOpening/JobOpeningForm";
+import JobDetails from "../pages/HumanResource/JobOpening/JobDetails";
 const ModuleRoutes = ({ moduleName }) => {
   const location = useLocation();
   const dispatch = useDispatch();
@@ -269,6 +272,16 @@ const ModuleRoutes = ({ moduleName }) => {
               />
             </>
           );
+        case "Job Management":
+          return (
+            <>
+              <Route path="job_management" element={<JobOpeningPage />} />
+              <Route path="job_management/create" element={<JobOpeningForm />} />
+              <Route path="job_management/update/:id" element={<JobOpeningForm />} />
+              <Route path="job_management/view/:id" element={<JobDetails />} />
+            </>
+          );
+
         default:
           return null; // If no menu matches, do nothing (you can handle default behavior)
       }

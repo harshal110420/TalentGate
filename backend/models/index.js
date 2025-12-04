@@ -17,7 +17,7 @@ const Role = require("./Role")(dashMatrixSequelize);
 const Subject = require("./Subject")(dashMatrixSequelize);
 const User = require("./User")(dashMatrixSequelize);
 const UserPermission = require("./UserPermission")(dashMatrixSequelize);
-
+const JobOpening = require("./HR_Models/jobOpeningModel")(dashMatrixSequelize);
 // ==============================
 // 📦 CREATE DB OBJECT FIRST
 // ==============================
@@ -37,6 +37,7 @@ const DashMatrixDB = {
   Subject,
   User,
   UserPermission,
+  JobOpening,
 };
 
 // ==============================
@@ -86,6 +87,17 @@ Department.hasMany(QuestionBank, {
   as: "questions",
 });
 
+// --- Department ↔ JobOpening
+Department.hasMany(JobOpening, {
+  foreignKey: "departmentId",
+  as: "jobOpenings",
+});
+
+JobOpening.belongsTo(Department, {
+  foreignKey: "departmentId",
+  as: "department",
+});
+
 QuestionBank.belongsTo(Department, {
   foreignKey: "departmentId",
   as: "department",
@@ -111,6 +123,17 @@ Candidate.belongsTo(Exam, { foreignKey: "examId", as: "exam" });
 Exam.hasMany(ExamResult, { foreignKey: "examId", as: "results" });
 ExamResult.belongsTo(Exam, { foreignKey: "examId", as: "exam" });
 
+// --- Exam ↔ JobOpening
+Exam.hasMany(JobOpening, {
+  foreignKey: "examId",
+  as: "jobOpenings",
+});
+
+JobOpening.belongsTo(Exam, {
+  foreignKey: "examId",
+  as: "exam",
+});
+
 // --- Candidate ↔ ExamResult
 // Candidate.belongsTo(ExamResult, { foreignKey: "resultId", as: "examResult" });
 ExamResult.belongsTo(Candidate, { foreignKey: "candidateId", as: "candidate" });
@@ -123,6 +146,17 @@ User.belongsTo(Role, { foreignKey: "roleId", as: "role" });
 User.hasMany(QuestionBank, { foreignKey: "createdBy", as: "createdQuestions" });
 QuestionBank.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
 
+// --- User ↔ JobOpening (Created By)
+User.hasMany(JobOpening, {
+  foreignKey: "createdBy",
+  as: "createdJobOpenings",
+});
+
+JobOpening.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "creator",
+});
+  
 // ==============================
 // 🔗 AUTO-ASSOCIATE (IF AVAILABLE)
 // ==============================

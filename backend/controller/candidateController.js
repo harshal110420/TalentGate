@@ -1,12 +1,10 @@
 const asyncHandler = require("express-async-handler");
-
 const { DashMatrixDB } = require("../models");
 const { Candidate, Exam, Department } = DashMatrixDB;
 const sendEmails = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
 
 const createCandidate = asyncHandler(async (req, res) => {
-  console.log("Incoming request body:", req.body); // ✅ Add this line
   const {
     name,
     email,
