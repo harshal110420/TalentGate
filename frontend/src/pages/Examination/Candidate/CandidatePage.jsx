@@ -4,14 +4,14 @@ import { fetchAllCandidates, reassignExam } from "../../../features/Candidate/ca
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, Pencil, Send, RefreshCcw } from "lucide-react";
+import { PlusCircle, Pencil, Send, RefreshCcw, Eye } from "lucide-react";
 import { toast } from "react-toastify";
 import SkeletonPage from "../../../components/skeletons/skeletonPage";
 import { sendCandidateExamMail } from "../../../services/candidateService";
 import { getModulePathByMenu } from "../../../utils/navigation";
 import ButtonWrapper from "../../../components/ButtonWrapper";
 import ConfirmModal from "../../../components/common/ConfirmModal";
-import { m } from "framer-motion";
+
 
 const CandidatePage = () => {
   const dispatch = useDispatch();
@@ -24,13 +24,12 @@ const CandidatePage = () => {
   const [selectedExamId, setSelectedExamId] = useState("");
   const [loadingConfirm, setLoadingConfirm] = useState(false);
   const [reassignLoading, setReassignLoading] = useState(false);
-
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedViewCandidate, setSelectedViewCandidate] = useState(null);
+  console.log("selected candidate data:", selectedViewCandidate)
   const modules = useSelector((state) => state.modules.list);
-  console.log("Modules:", modules)
   const menu = useSelector((state) => state.menus.list);
-  console.log("menu:", menu)
   const modulePath = getModulePathByMenu("candidate_management", modules, menu);
-  console.log("modulePath:", modulePath);
   const {
     list: candidates,
     loading,
@@ -254,7 +253,7 @@ const CandidatePage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1100px] w-full text-sm">
+        <table className="min-w-[1300px] w-full text-sm">
           <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
             <tr>
               <th className="px-4 py-3 text-left">Name</th>
@@ -264,6 +263,7 @@ const CandidatePage = () => {
               <th className="px-4 py-3 text-left">Exam</th>
               <th className="px-4 py-3 text-left">Exam Status</th>
               <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-center">Resume</th>
               <th className="px-4 py-3 text-left">Last Mail</th>
               <th className="px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 border-l">
                 Actions
@@ -321,9 +321,39 @@ const CandidatePage = () => {
                       {c.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
+                  <td className="px-4 py-2 text-center">
+                    {c.resumeUrl ? (
+                      <a
+                        href={c.resumeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="
+        inline-flex items-center gap-1 px-2 py-1 
+        text-xs rounded-md bg-blue-100 text-blue-700
+        hover:bg-blue-200 transition
+      "
+                      >
+                        Download
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 text-xs">N/A</span>
+                    )}
+                  </td>
+
                   <td className="px-4 py-2">{formatToIST(c.lastMailSentAt)}</td>
                   <td className="px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 border-l">
                     <div className="flex justify-center items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedViewCandidate(c);
+                          setViewModalOpen(true);
+                        }}
+                        className="text-gray-600 hover:text-black p-1 rounded-full transition"
+                        title="View Candidate"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <ButtonWrapper
                         subModule="Candidate Management"
                         permission="edit"
@@ -365,6 +395,8 @@ const CandidatePage = () => {
                       >
                         <RefreshCcw className="w-4 h-4" />
                       </button>
+
+
 
                     </div>
                   </td>
@@ -408,6 +440,155 @@ const CandidatePage = () => {
           </button>
         </div>
       )}
+
+      {viewModalOpen && selectedViewCandidate && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
+
+          <div className="
+      bg-white dark:bg-gray-900
+      w-[90%] max-w-6xl 
+      h-[90vh]
+      rounded-2xl shadow-2xl
+      flex flex-col
+      overflow-hidden
+    ">
+
+            {/* ===== HEADER ===== */}
+            <div className="px-6 py-4 flex justify-between items-center border-b dark:border-gray-700">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                  {selectedViewCandidate.name}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {selectedViewCandidate.email}
+                </p>
+              </div>
+
+              <div className="flex gap-4 items-center">
+                <span className="
+            text-xs px-3 py-1 rounded-full
+            bg-blue-100 text-blue-700
+          ">
+                  {selectedViewCandidate.applicationStage}
+                </span>
+
+                <button
+                  onClick={() => setViewModalOpen(false)}
+                  className="text-xl hover:text-red-500"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* ===== BODY ===== */}
+            <div className="flex flex-1 overflow-hidden">
+
+              {/* ===== LEFT PROFILE CARD ===== */}
+              <aside className="w-[280px] border-r dark:border-gray-700 p-5 space-y-4 bg-gray-50 dark:bg-gray-800">
+
+                <div className="text-center">
+                  <div className="w-24 h-24 bg-blue-100 rounded-full mx-auto flex items-center justify-center text-3xl font-bold text-blue-700">
+                    {selectedViewCandidate.name[0]}
+                  </div>
+
+                  <h4 className="mt-3 font-semibold">
+                    {selectedViewCandidate.name}
+                  </h4>
+
+                  <p className="text-xs text-gray-500">
+                    Rating : {selectedViewCandidate.hrRating || "N/A"}⭐
+                  </p>
+                </div>
+
+                <hr />
+
+                <div className="text-sm space-y-2">
+                  <p><b>Mobile:</b> {selectedViewCandidate.mobile || "N/A"}</p>
+                  <p><b>Experience:</b> {selectedViewCandidate.experience || "N/A"}</p>
+                  <p><b>Source:</b> {selectedViewCandidate.source}</p>
+
+                  <p>
+                    <b>Recruiter:</b> {selectedViewCandidate.assignedRecruiterId || "N/A"}
+                  </p>
+                </div>
+
+                {selectedViewCandidate.resumeUrl && (
+                  <a
+                    href={selectedViewCandidate.resumeUrl}
+                    target="_blank"
+                    className="
+                block text-center py-2 rounded-md
+                bg-blue-600 hover:bg-blue-700 text-white text-sm
+              "
+                  >
+                    📄 View Resume
+                  </a>
+                )}
+
+              </aside>
+
+
+              {/* ===== RIGHT DETAILS AREA ===== */}
+              <section className="
+          flex-1 p-6
+          overflow-y-auto
+          text-sm
+          space-y-4
+        ">
+
+                {/* ----- Job Details ----- */}
+                <div>
+                  <h5 className="font-bold mb-1">Job Details</h5>
+                  <div className="grid grid-cols-3 gap-4 text-gray-600">
+                    <p><b>Job Code:</b> {selectedViewCandidate.jobCode}</p>
+                    <p><b>Job Title:</b> {selectedViewCandidate.job?.title}</p>
+                    <p><b>Job Designation:</b> {selectedViewCandidate?.job.designation}</p>
+                    <p><b>Department:</b> {selectedViewCandidate.department.name}</p>
+                  </div>
+                </div>
+
+                {/* ----- Exam Status ----- */}
+                <div>
+                  <h5 className="font-bold mb-1">Exam Status</h5>
+
+                  <div className="grid grid-cols-3 gap-3 text-gray-600">
+                    <p><b>Exam:</b> {selectedViewCandidate.examId || "Not Assigned"}</p>
+                    <p><b>Status:</b> {selectedViewCandidate.examStatus}</p>
+                    <p>
+                      <b>Last Mail:</b>{" "}
+                      {selectedViewCandidate.lastMailSentAt
+                        ? new Date(selectedViewCandidate.lastMailSentAt).toLocaleString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* ----- HR Notes ----- */}
+                <div>
+                  <h5 className="font-bold mb-1">HR Remarks</h5>
+
+                  <textarea
+                    value={selectedViewCandidate.remarks || ""}
+                    disabled
+                    className="
+                w-full min-h-[120px]
+                px-3 py-2
+                border rounded-md
+                bg-gray-50 dark:bg-gray-800
+                resize-none
+              "
+                  />
+                </div>
+
+              </section>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
 
       <ConfirmModal
         open={confirmModalOpen}

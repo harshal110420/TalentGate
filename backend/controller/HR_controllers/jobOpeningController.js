@@ -272,10 +272,100 @@ const deleteJobOpening = asyncHandler(async (req, res) => {
   });
 });
 
+/* ==========================================
+   ✅ PUBLIC: Get All Jobs
+========================================== */
+const getPublicJobs = asyncHandler(async (req, res) => {
+  const jobs = await JobOpening.findAll({
+    where: {
+      isPublished: true,
+      status: "Open",
+    },
+    attributes: [
+      "id",
+      "jobCode",
+      "title",
+      "location",
+      "minExperience",
+      "maxExperience",
+      "employmentType",
+      "openingDate",
+    ],
+    include: [
+      {
+        model: Department,
+        as: "department",
+        attributes: ["id", "name"],
+      },
+    ],
+    order: [["created_at", "DESC"]],
+  });
+
+  res.json({
+    success: true,
+    data: jobs,
+  });
+});
+
+/* ==========================================
+   ✅ PUBLIC: Get Single Job (Details Page)
+========================================== */
+const getPublicJobByCode = asyncHandler(async (req, res) => {
+  const { jobCode } = req.params;
+
+  const job = await JobOpening.findOne({
+    where: {
+      jobCode,
+      isPublished: true,
+      status: "Open",
+    },
+    attributes: [
+      "id",
+      "jobCode",
+      "title",
+      "designation",
+      "employmentType",
+      "location",
+      "minExperience",
+      "maxExperience",
+      "salaryMin",
+      "salaryMax",
+      "noticePeriod",
+      "requiredSkills",
+      "educationQualifications",
+      "jobDescription",
+      "vacancyCount",
+      "priorityLevel",
+      "openingDate",
+      "closingDate",
+    ],
+    include: [
+      {
+        model: Department,
+        as: "department",
+        attributes: ["id", "name"],
+      },
+    ],
+  });
+
+  if (!job)
+    return res.status(404).json({
+      success: false,
+      message: "Job not found or no longer available",
+    });
+
+  res.json({
+    success: true,
+    data: job,
+  });
+});
+
 module.exports = {
   createJobOpening,
   getAllJobOpenings,
   getJobOpeningById,
   updateJobOpening,
   deleteJobOpening,
+  getPublicJobs,
+  getPublicJobByCode,
 };

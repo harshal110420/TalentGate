@@ -18,6 +18,8 @@ const examRoutes = require("./routes/examRoutes");
 const examResultRoutes = require("./routes/examResultRoutes");
 // const websiteCareerRoutes = require("./routes/websiteCareerRoutes");
 const jobOpeningRoutes = require("./routes/HR_Routes/jobOpeningRoutes");
+const jobPublicRoutes = require("./routes/HR_Routes/jobPublicRoutes");
+const jobApplyRoutes = require("./routes/Public_routes/publicCareerRoutes");
 dotenv.config();
 
 const app = express();
@@ -48,6 +50,10 @@ app.use("/api/exam", examRoutes); // Exam-related routes
 app.use("/api/exam_results", examResultRoutes); // Exam Result-related routes
 // app.use("/api/website/careers", websiteCareerRoutes);
 app.use("/api/job-openings", jobOpeningRoutes); // Job Opening-related routes
+
+// public routes
+app.use("/api/public", jobPublicRoutes);
+app.use("/api/careers", jobApplyRoutes);
 // Test route
 app.get("/", (req, res) => {
   res.send("Server is running!");

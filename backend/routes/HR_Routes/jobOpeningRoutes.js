@@ -8,7 +8,10 @@ const {
   getJobOpeningById,
   updateJobOpening,
   deleteJobOpening,
+  getPublicJobs,
+  getPublicJobByCode,
 } = require("../../controller/HR_controllers/jobOpeningController");
+
 const MENU_CODE = "job_management";
 
 // Create
@@ -50,5 +53,10 @@ router.delete(
   checkPermissionUnified(MENU_CODE, "delete", false),
   deleteJobOpening
 );
+
+// ✅ Anyone can access these
+router.get("/jobs", getPublicJobs);
+
+router.get("/jobs/:jobCode", getPublicJobByCode);
 
 module.exports = router;

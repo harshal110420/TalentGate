@@ -156,7 +156,18 @@ JobOpening.belongsTo(User, {
   foreignKey: "createdBy",
   as: "creator",
 });
-  
+
+// --- Candidate ↔ JobOpening
+JobOpening.hasMany(Candidate, {
+  foreignKey: "jobId",
+  as: "candidates",
+});
+
+Candidate.belongsTo(JobOpening, {
+  foreignKey: "jobId",
+  as: "job",
+});
+
 // ==============================
 // 🔗 AUTO-ASSOCIATE (IF AVAILABLE)
 // ==============================

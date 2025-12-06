@@ -635,9 +635,9 @@ const ExamForm = () => {
           {/* Step 3 - Random Questions */}
           {currentStep === 2 && (
             <section className="space-y-4">
-              <h3 className="text-xl font-semibold border-b pb-2">
+              {/* <h3 className="text-xl font-semibold border-b pb-2">
                 Random Questions
-              </h3>
+              </h3> */}
 
               <div className="flex flex-wrap gap-4 items-end mb-4">
                 <div>

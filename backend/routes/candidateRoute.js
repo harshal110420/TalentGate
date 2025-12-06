@@ -14,7 +14,7 @@ const {
 } = require("../controller/candidateController");
 const verifyTokenAndLogin = require("../middleware/verifyExamTokenMiddleware");
 const verifyCandidateToken = require("../middleware/verifyCandidateMiddleware");
-
+const upload = require("../middleware/multerMiddleware");
 const MENU_CODE = "candidate_management";
 
 // Create
@@ -22,6 +22,7 @@ router.post(
   "/create",
   authMiddleware,
   checkPermissionUnified(MENU_CODE, "new", false),
+  upload.single("resume"),
   createCandidate
 );
 // Get All
@@ -47,6 +48,7 @@ router.put(
   "/:id",
   authMiddleware,
   checkPermissionUnified(MENU_CODE, "edit", false),
+  upload.single("resume"),
   updateCandidate
 );
 // Delete

@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const { DashMatrixDB } = require("../models");
-const { Candidate, Exam, Department, JobOpening } = DashMatrixDB;
+const { Candidate, Exam, Department } = DashMatrixDB;
 const sendEmails = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
 
@@ -13,79 +13,45 @@ const createCandidate = asyncHandler(async (req, res) => {
     examId,
     departmentId,
     isActive = true,
-    source = "offline",
-    jobId,
-    jobCode,
-    applicationStage = "Applied",
-    assignedRecruiterId,
-    remarks,
-    resumeReviewed = false,
-    hrRating,
   } = req.body;
 
-  if (!name || !email) {
+  // Basic validation
+  if (!email) {
     return res.status(400).json({ message: "Name and email are required" });
   }
 
-  //-------------------------------
-  // EMAIL DUPLICATE CHECK
-  //-------------------------------
+  // Check for duplicate email
   const existing = await Candidate.findOne({ where: { email } });
   if (existing) {
     return res
       .status(400)
       .json({ message: "Candidate with this email already exists" });
   }
-  const resumeUrl = req.file ? req.file.path : null;
 
-  const finalExamId = examId && examId !== "null" ? Number(examId) : null;
+  const examStatus = examId ? "Assigned" : "Not assigned";
 
-  const payload = {
+  const candidate = await Candidate.create({
     name,
     email,
     mobile,
     experience,
-    examId: finalExamId,
-    departmentId: departmentId ? Number(departmentId) : null,
+    examId,
+    departmentId,
     isActive,
-    resumeUrl,
-    source,
-    jobId,
-    jobCode,
-    applicationStage,
-    assignedRecruiterId: assignedRecruiterId
-      ? Number(assignedRecruiterId)
-      : null,
-    remarks,
-    resumeReviewed,
-    hrRating: hrRating ? Number(hrRating) : null,
-    examStatus: finalExamId ? "Assigned" : "Not assigned",
+    examStatus,
     created_by: req.user?.id || null,
-  };
-  try {
-    const candidate = await Candidate.create(payload);
-    res.status(201).json({
-      message: "Candidate created successfully",
-      candidate,
-    });
-  } catch (err) {
-    res.status(500).json({
-      message: "Candidate creation failed",
-      error: err.original?.sqlMessage || err.message,
-    });
-  }
+  });
+
+  res
+    .status(201)
+    .json({ message: "Candidate created successfully", candidate });
 });
 
 const getAllCandidates = asyncHandler(async (req, res) => {
   const candidates = await Candidate.findAll({
     include: [
       { model: Exam, as: "exam" },
-      { model: Department, as: "department", attributes: ["id", "name"] },
-      {
-        model: JobOpening,
-        as: "job",
-        attributes: ["id", "jobCode", "title", "designation"],
-      },
+      { model: Department, as: "department" },
     ],
     order: [["id", "DESC"]],
   });
@@ -110,101 +76,39 @@ const getCandidateById = asyncHandler(async (req, res) => {
 
 const updateCandidate = asyncHandler(async (req, res) => {
   const candidate = await Candidate.findByPk(req.params.id);
-  if (!candidate) {
+  if (!candidate)
     return res.status(404).json({ message: "Candidate not found" });
-  }
-  // Destructure body
-  const {
-    name,
-    email,
-    mobile,
-    experience,
-    examId,
-    departmentId,
-    isActive,
-    resumeUrl,
-    source,
-    jobId,
-    jobCode,
-    applicationStage,
-    assignedRecruiterId,
-    remarks,
-    resumeReviewed,
-    hrRating,
-  } = req.body;
 
-  const resumeUrlFinal = req.file?.path || resumeUrl || candidate.resumeUrl;
+  const { name, email, mobile, experience, examId, departmentId, isActive } =
+    req.body;
 
-  // Helper functions
-  const sanitizeNumber = (val, fallback = null) => {
-    if (val === undefined || val === null || val === "" || val === "null")
-      return fallback;
-    const num = Number(val);
-    return isNaN(num) ? fallback : num;
-  };
-
-  const sanitizeBoolean = (val, fallback) => {
-    if (typeof val === "boolean") return val;
-    if (val === "true") return true;
-    if (val === "false") return false;
-    return fallback;
-  };
-
-  // Sanitize values
-  const sanitizedExamId = sanitizeNumber(examId);
-  const sanitizedDepartmentId = sanitizeNumber(
-    departmentId,
-    candidate.departmentId
-  );
-  const sanitizedJobId = sanitizeNumber(jobId, candidate.jobId);
-  const sanitizedAssignedRecruiterId = sanitizeNumber(
-    assignedRecruiterId,
-    candidate.assignedRecruiterId
-  );
-  const sanitizedHrRating = sanitizeNumber(hrRating, candidate.hrRating);
-
-  const sanitizedIsActive = sanitizeBoolean(isActive, candidate.isActive);
-  const sanitizedResumeReviewed = sanitizeBoolean(
-    resumeReviewed,
-    candidate.resumeReviewed
-  );
-
-  // Prepare updated fields
   const updatedFields = {
     name: name ?? candidate.name,
     email: email ?? candidate.email,
     mobile: mobile ?? candidate.mobile,
     experience: experience ?? candidate.experience,
-    examId: sanitizedExamId ?? candidate.examId,
-    departmentId: sanitizedDepartmentId,
-    isActive: sanitizedIsActive,
-    resumeUrl: resumeUrlFinal,
-    source: source ?? candidate.source,
-    jobId: sanitizedJobId,
-    jobCode: jobCode ?? candidate.jobCode,
-    applicationStage: applicationStage ?? candidate.applicationStage,
-    assignedRecruiterId: sanitizedAssignedRecruiterId,
-    remarks: remarks ?? candidate.remarks,
-    resumeReviewed: sanitizedResumeReviewed,
-    hrRating: sanitizedHrRating,
+    examId: examId,
+    departmentId: departmentId ?? candidate.departmentId,
+    isActive: typeof isActive === "boolean" ? isActive : candidate.isActive,
     updated_by: req.user?.id || null,
   };
 
-  // Update examStatus only if examId changed
-  if (sanitizedExamId !== candidate.examId) {
-    if (sanitizedExamId) {
+  // Update examStatus only if examId has changed
+  if (typeof examId !== "undefined" && examId !== candidate.examId) {
+    if (examId) {
       updatedFields.examStatus = "Assigned";
     } else {
       updatedFields.examStatus = "Not assigned";
-      updatedFields.examId = null;
+      updatedFields.examId = null; // also reset examId if needed
     }
   }
+  console.log("Updating candidate with =>", updatedFields);
+
   await candidate.update(updatedFields);
 
-  res.status(200).json({
-    message: "Candidate updated successfully",
-    candidate,
-  });
+  res
+    .status(200)
+    .json({ message: "Candidate updated successfully", candidate });
 });
 
 const deleteCandidate = asyncHandler(async (req, res) => {

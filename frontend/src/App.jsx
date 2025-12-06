@@ -12,6 +12,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import ExamLoginPage from "./pages/ExamLoginPage"; // ✅ Add this
 import ExamUIPreview from "./pages/ExamUIPreview.jsx";
 import ExamCompleted from "./pages/ExamCompleted.jsx";
+import JobList from "./pages/JobList.jsx";
 
 function App() {
   return (
@@ -19,6 +20,9 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
+            {/* ✅ PUBLIC ROUTE */}
+            <Route path="/jobs" element={<JobList />} />
+
             <Route
               path="/login"
               element={

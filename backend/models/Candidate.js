@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const { dashMatrixSequelize } = require("../config/db"); // ✅ Import the correct Sequelize instance
+const { dashMatrixSequelize } = require("../config/db");
 
 module.exports = () => {
   const Candidate = dashMatrixSequelize.define(
@@ -10,30 +10,112 @@ module.exports = () => {
         autoIncrement: true,
         primaryKey: true,
       },
+
+      /* =====================
+          BASIC PROFILE
+      ====================== */
+
       name: {
         type: DataTypes.STRING,
         allowNull: false,
       },
+
       email: {
         type: DataTypes.STRING,
         allowNull: false,
       },
+
       mobile: {
         type: DataTypes.STRING,
         allowNull: true,
       },
+
       experience: {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      examId: {
+
+      resumeUrl: {
+        type: DataTypes.STRING,
+        allowNull: true, // Cloudinary link
+      },
+
+      source: {
+        type: DataTypes.ENUM("online", "offline"),
+        defaultValue: "offline",
+      },
+
+      /* =====================
+          JOB TRACKING
+      ====================== */
+
+      jobId: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+
+      jobCode: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
       departmentId: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+
+      applicationStage: {
+        type: DataTypes.ENUM(
+          "Applied",
+          "Resume Reviewed",
+          "Shortlisted",
+          "Interview Scheduled",
+          "Interview Passed",
+          "Exam Assigned",
+          "Selected",
+          "Rejected",
+          "Hired"
+        ),
+        defaultValue: "Applied",
+      },
+
+      /* =====================
+          SCREENING / HR TOOLS
+      ====================== */
+
+      assignedRecruiterId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
+      remarks: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      resumeReviewed: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+
+      hrRating: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+          min: 1,
+          max: 5,
+        },
+      },
+
+      /* =====================
+          EXAM WORKFLOW
+      ====================== */
+
+      examId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+
       examStatus: {
         type: DataTypes.ENUM(
           "Not assigned",
@@ -44,17 +126,26 @@ module.exports = () => {
         ),
         defaultValue: "Not assigned",
       },
-      lastMailSentAt: { type: DataTypes.DATE, allowNull: true }, // 🆕
+
+      lastMailSentAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+
+      /* =====================
+          SYSTEM
+      ====================== */
+
       isActive: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
       },
 
-      // 🆕 Audit Fields
       created_by: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+
       updated_by: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -67,8 +158,6 @@ module.exports = () => {
       updatedAt: "updated_at",
     }
   );
-
-  // 🔗 Associations
 
   return Candidate;
 };

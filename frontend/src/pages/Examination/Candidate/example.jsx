@@ -1,448 +1,509 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCandidates, reassignExam } from "../../../features/Candidate/candidateSlice";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
-import { useNavigate } from "react-router-dom";
-import { PlusCircle, Pencil, Send, RefreshCcw } from "lucide-react";
-import { toast } from "react-toastify";
-import SkeletonPage from "../../../components/skeletons/skeletonPage";
-import { sendCandidateExamMail } from "../../../services/candidateService";
-import { getModulePathByMenu } from "../../../utils/navigation";
-import ButtonWrapper from "../../../components/ButtonWrapper";
-import ConfirmModal from "../../../components/common/ConfirmModal";
-import { m } from "framer-motion";
+import {
+  createCandidate,
+  updateCandidate,
+  fetchCandidateById,
+  clearSelectedCandidate,
+  resetCandidateStatus,
+} from "../../../features/Candidate/candidateSlice";
 
-const CandidatePage = () => {
+import { getModulePathByMenu } from "../../../utils/navigation";
+import SkeletonForm from "../../../components/skeletons/skeletonForm";
+import FormActionButtons from "../../../components/common/FormActionButtons";
+
+const steps = ["Basic Info"];
+
+const experienceOptions = [
+  { value: "0-1", label: "0-1 years" },
+  { value: "1-2", label: "1-2 years" },
+  { value: "2-3", label: "2-3 years" },
+  { value: "3-4", label: "3-4 years" },
+  { value: "4-5", label: "4-5 years" },
+  { value: "5-6", label: "5-6 years" },
+  { value: "6-7", label: "6-7 years" },
+  { value: "7-8", label: "7-8 years" },
+  { value: "8-9", label: "8-9 years" },
+  { value: "9-10", label: "9-10 years" },
+  { value: "10-11", label: "10-11 years" },
+  { value: "11-12", label: "11-12 years" },
+  { value: "12-13", label: "12-13 years" },
+  { value: "13-14", label: "13-14 years" },
+  { value: "14-15", label: "14-15 years" },
+  { value: "15-16", label: "15-16 years" },
+  { value: "16-17", label: "16-17 years" },
+  { value: "17-18", label: "17-18 years" },
+  { value: "18-19", label: "18-19 years" },
+  { value: "19-20", label: "19-20 years" },
+  { value: "20-21", label: "20-21 years" },
+  { value: "21-22", label: "21-22 years" },
+  { value: "22-23", label: "22-23 years" },
+  { value: "23-24", label: "23-24 years" },
+  { value: "24-25", label: "24-25 years" },
+  { value: "25-26", label: "25-26 years" },
+  { value: "26-27", label: "26-27 years" },
+  { value: "27-28", label: "27-28 years" },
+  { value: "28-29", label: "28-29 years" },
+  { value: "29-30", label: "29-30 years" },
+];
+
+const applicationStageOptions = [
+  "Applied",
+  "Resume Reviewed",
+  "Shortlisted",
+  "Interview Scheduled",
+  "Interview Passed",
+  "Exam Assigned",
+  "Selected",
+  "Rejected",
+  "Hired",
+];
+
+const hrRatingOptions = [1, 2, 3, 4, 5];
+
+const initialForm = {
+  name: "",
+  email: "",
+  mobile: "",
+  experience: "",
+  departmentId: "",
+  examId: "",
+  isActive: true,
+  resumeFile: null,
+  resumeUrl: "",
+  source: "offline",
+  jobCode: "",
+  applicationStage: "Applied",
+  assignedRecruiterId: "",
+  remarks: "",
+  resumeReviewed: false,
+  hrRating: "",
+};
+
+const CandidateForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [sendingId, setSendingId] = useState(null);
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [reassignModalOpen, setReassignModalOpen] = useState(false);
-  const [selectedReassignCandidate, setSelectedReassignCandidate] = useState(null);
-  const [selectedExamId, setSelectedExamId] = useState("");
-  const [loadingConfirm, setLoadingConfirm] = useState(false);
-  const [reassignLoading, setReassignLoading] = useState(false);
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
 
-  const modules = useSelector((state) => state.modules.list);
-  console.log("Modules:", modules)
-  const menu = useSelector((state) => state.menus.list);
-  console.log("menu:", menu)
-  const modulePath = getModulePathByMenu("candidate_management", modules, menu);
-  console.log("modulePath:", modulePath);
-  const {
-    list: candidates,
-    loading,
-    error,
-  } = useSelector((state) => state.candidate);
+  const { selected, loading } = useSelector((state) => state.candidate);
   const departments = useSelector((state) => state.department.list);
+  const deptLoading = useSelector((state) => state.department.loading);
   const exams = useSelector((state) => state.exam.list);
-
-  const [filters, setFilters] = useState({
-    search: "",
-    departmentId: "",
-    examId: "",
-    status: "all",
-    examStatus: "all",
-  });
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 8;
-
-  const formatToIST = (utcString) => {
-    if (!utcString) return "-";
-    const date = new Date(utcString);
-    return date.toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-      hour12: true,
-    });
-  };
-
-  useEffect(() => {
-    dispatch(fetchAllCandidates());
-    dispatch(fetchAllDepartments());
-    dispatch(fetchAllExams());
-  }, [dispatch]);
-
-  const filteredCandidates = useMemo(() => {
-    return candidates.filter((c) => {
-      const searchText = filters.search.toLowerCase();
-      const matchesSearch =
-        c.name?.toLowerCase().includes(searchText) ||
-        c.email?.toLowerCase().includes(searchText) ||
-        c.mobile?.toLowerCase().includes(searchText);
-
-      const matchesDept = filters.departmentId
-        ? c.departmentId === Number(filters.departmentId)
-        : true;
-      const matchesExam = filters.examId
-        ? c.examId === Number(filters.examId)
-        : true;
-      const matchesStatus =
-        filters.status === "all"
-          ? true
-          : filters.status === "true"
-            ? c.isActive
-            : !c.isActive;
-      const matchesExamStatus =
-        filters.examStatus === "all"
-          ? true
-          : c.examStatus === filters.examStatus;
-
-      return (
-        matchesSearch &&
-        matchesDept &&
-        matchesExam &&
-        matchesStatus &&
-        matchesExamStatus
-      );
-    });
-  }, [candidates, filters]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredCandidates.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const currentCandidates = filteredCandidates.slice(
-    startIndex,
-    startIndex + rowsPerPage
+  const examLoading = useSelector((state) => state.exam.loading);
+  const modules = useSelector((state) => state.modules.list);
+  const menus = useSelector((state) => state.menus.list);
+  const modulePath = getModulePathByMenu(
+    "candidate_management",
+    modules,
+    menus
   );
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const [form, setForm] = useState(initialForm);
+  const [currentStep, setCurrentStep] = useState(0);
+
+  // ----- Fetch data -----
+  useEffect(() => {
+    dispatch(fetchAllDepartments());
+    dispatch(fetchAllExams());
+    if (isEditMode) dispatch(fetchCandidateById(id));
+    return () => {
+      dispatch(clearSelectedCandidate());
+      dispatch(resetCandidateStatus());
+    };
+  }, [dispatch, id, isEditMode]);
+
+  // ----- Populate form in edit mode -----
+  useEffect(() => {
+    if (isEditMode && selected) {
+      setForm({
+        name: selected.name || "",
+        email: selected.email || "",
+        mobile: selected.mobile || "",
+        experience: selected.experience || "",
+        departmentId: selected.departmentId ? String(selected.departmentId) : "",
+        examId: selected.examId ? String(selected.examId) : "",
+        isActive: typeof selected.isActive === "boolean" ? selected.isActive : true,
+        resumeUrl: selected.resumeUrl || "",
+        resumeFile: null,
+        jobCode: selected.jobCode || "",
+        applicationStage: selected.applicationStage || "Applied",
+        assignedRecruiterId: selected.assignedRecruiterId || "",
+        remarks: selected.remarks || "",
+        resumeReviewed: selected.resumeReviewed || false,
+        hrRating: selected.hrRating || "",
+      });
+    }
+  }, [selected, isEditMode]);
+
+  // ----- Handle field changes -----
+  const handleChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
+    if (type === "file") {
+      setForm((prev) => ({ ...prev, resumeFile: files[0] }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
-  const handleSendMail = async () => {
-    if (!selectedCandidate) return;
+  // ----- Form validation -----
+  const isFormValid =
+    form.name.trim() !== "" &&
+    form.email.trim() !== "" &&
+    form.experience !== "" &&
+    form.departmentId !== "";
 
-    setLoadingConfirm(true); // start loading
+  // ----- Submit handler -----
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    if (!selectedCandidate.examId) {
-      toast.error("This candidate has no assigned exam.");
-      setLoadingConfirm(false);
-      return;
-    }
-
-    try {
-      const { data } = await sendCandidateExamMail(selectedCandidate.id);
-      toast.success(data?.message || `Mail sent successfully!`);
-      dispatch(fetchAllCandidates());
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to send mail.");
-    } finally {
-      setLoadingConfirm(false); // stop loading
-      setConfirmModalOpen(false);
-      setSelectedCandidate(null);
-    }
-  };
-
-  const handleReassign = async () => {
-    if (!selectedReassignCandidate || !selectedExamId) {
-      toast.error("Please select an exam.");
-      return;
-    }
-
-    setReassignLoading(true);
+    const payload = {
+      ...form,
+      departmentId: form.departmentId ? parseInt(form.departmentId) : null,
+      examId: form.examId ? parseInt(form.examId) : null,
+      assignedRecruiterId: form.assignedRecruiterId ? parseInt(form.assignedRecruiterId) : null,
+      hrRating: form.hrRating ? parseInt(form.hrRating) : null,
+    };
 
     try {
-      await dispatch(
-        reassignExam({
-          candidateId: selectedReassignCandidate.id,
-          examId: selectedExamId,
-        })
-      ).unwrap();
-
-      toast.success("Exam reassigned successfully!");
-      dispatch(fetchAllCandidates());
-
-      // Modal ko success ke baad hi close karna
-      setReassignModalOpen(false);
-      setSelectedReassignCandidate(null);
-      setSelectedExamId("");
+      if (isEditMode) {
+        await dispatch(updateCandidate({ id, data: payload })).unwrap();
+        toast.success("Candidate updated successfully");
+      } else {
+        await dispatch(createCandidate(payload)).unwrap();
+        toast.success("Candidate created successfully");
+        setForm(initialForm);
+      }
+      navigate(`/module/${modulePath}/candidate_management`);
     } catch (err) {
-      toast.error(err || "Failed to reassign exam");
-    } finally {
-      // Ye rehne do — but modal close yaha nahi hoga
-      setReassignLoading(false);
+      toast.error(err || "Something went wrong");
     }
   };
 
+  if (loading || deptLoading || examLoading) return <SkeletonForm />;
 
 
   return (
-    <div className="max-w-full px-5 py-5 font-sans text-gray-800 dark:text-gray-100">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          Candidate Management
-        </h1>
-        <ButtonWrapper subModule="Candidate Management" permission="new">
-          <button
-            onClick={() =>
-              navigate(`/module/${modulePath}/candidate_management/create`)
-            }
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 
-      hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-medium 
-      px-2 py-2 rounded-lg shadow-sm transition"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Add Candidate
-          </button>
-        </ButtonWrapper>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 mb-5 flex flex-wrap gap-2 items-center">
-        <input
-          type="text"
-          placeholder="Search candidates..."
-          value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm flex-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800"
-        />
-        <select
-          value={filters.departmentId}
-          onChange={(e) =>
-            setFilters({ ...filters, departmentId: e.target.value })
-          }
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="">All Departments</option>
-          {departments.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.examId}
-          onChange={(e) => setFilters({ ...filters, examId: e.target.value })}
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="">All Exams</option>
-          {exams.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="all">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-        <select
-          value={filters.examStatus}
-          onChange={(e) =>
-            setFilters({ ...filters, examStatus: e.target.value })
-          }
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="all">All Exam Status</option>
-          <option value="Assigned">Assigned</option>
-          <option value="In progress">In progress</option>
-          <option value="Completed">Completed</option>
-          <option value="Expired">Expired</option>
-        </select>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1100px] w-full text-sm">
-          <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
-            <tr>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Email</th>
-              <th className="px-4 py-3 text-left">Mobile</th>
-              <th className="px-4 py-3 text-left">Department</th>
-              <th className="px-4 py-3 text-left">Exam</th>
-              <th className="px-4 py-3 text-left">Exam Status</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Last Mail</th>
-              <th className="px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 border-l">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-950">
-            {loading ? (
-              <SkeletonPage rows={4} columns={9} />
-            ) : currentCandidates.length === 0 ? (
-              <tr>
-                <td colSpan="9" className="text-center py-5 text-gray-500">
-                  No candidates found.
-                </td>
-              </tr>
-            ) : (
-              currentCandidates.map((c, idx) => (
-                <tr
-                  key={c.id}
-                  className={`transition-colors duration-150 ${idx % 2 === 0
-                    ? "bg-white dark:bg-gray-900"
-                    : "bg-gray-50 dark:bg-gray-800"
-                    } hover:bg-blue-50 dark:hover:bg-gray-700`}
-                >
-                  <td className="px-4 py-2 text-[14px] font-medium">
-                    {c.name}
-                  </td>
-                  <td className="px-4 py-2">{c.email}</td>
-                  <td className="px-4 py-2">{c.mobile || "-"}</td>
-                  <td className="px-4 py-2">{c.department?.name || "-"}</td>
-                  <td className="px-4 py-2">{c.exam?.name || "-"}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.examStatus === "Assigned"
-                        ? "bg-blue-100 text-blue-700"
-                        : c.examStatus === "In progress"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : c.examStatus === "Completed"
-                            ? "bg-green-100 text-green-700"
-                            : c.examStatus === "Expired"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-gray-200 text-gray-800"
-                        }`}
-                    >
-                      {c.examStatus || "Not assigned"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                        }`}
-                    >
-                      {c.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">{formatToIST(c.lastMailSentAt)}</td>
-                  <td className="px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 border-l">
-                    <div className="flex justify-center items-center gap-2">
-                      <ButtonWrapper
-                        subModule="Candidate Management"
-                        permission="edit"
-                      >
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/module/${modulePath}/candidate_management/update/${c.id}`
-                            )
-                          }
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded-full transition"
-                          title="Edit Candidate"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </ButtonWrapper>
-                      <button
-                        onClick={() => {
-                          setSelectedCandidate(c);
-                          setConfirmModalOpen(true);
-                        }}
-                        disabled={sendingId === c.id}
-                        className={`${sendingId === c.id
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                          } text-white p-1.5 rounded-full transition`}
-                        title="Send Exam Mail"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedReassignCandidate(c);
-                          setSelectedExamId(c.examId || "");
-                          setReassignModalOpen(true);
-                        }}
-                        className="text-purple-600 hover:text-purple-800 p-1 rounded-full transition"
-                        title="Reassign Exam"
-                      >
-                        <RefreshCcw className="w-4 h-4" />
-                      </button>
-
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center mt-6 gap-2">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-            className="px-3 py-1.5 border rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
-          >
-            Prev
-          </button>
-
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => handlePageChange(i + 1)}
-              className={`px-3 py-1.5 border rounded-md text-sm font-medium transition ${currentPage === i + 1
-                ? "bg-blue-600 text-white border-blue-600"
-                : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => handlePageChange(currentPage + 1)}
-            className="px-3 py-1.5 border rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
-          >
-            Next
-          </button>
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col flex-grow max-w-full pt-5 pr-5 pl-5 pb-2 bg-white dark:bg-gray-900 rounded-lg shadow-md"
+        noValidate
+      >
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 border-b pb-3 mb-6">
+            {isEditMode ? "Edit Candidate" : "Create New Candidate"}
+          </h2>
+          <div className="flex border-b border-gray-300 dark:border-gray-700 mb-6 overflow-x-auto">
+            {steps.map((step, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setCurrentStep(index)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 rounded-t-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
+                  ${currentStep === index
+                    ? "border-blue-600 text-blue-600 dark:text-blue-300 dark:border-blue-400 bg-gray-100 dark:bg-gray-800"
+                    : "border-transparent text-gray-500 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }
+              `}
+              >
+                {step}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
 
-      <ConfirmModal
-        open={confirmModalOpen}
-        title="Send Exam Mail"
-        message={`Are you sure you want to send the exam mail to ${selectedCandidate?.name}?`}
-        onConfirm={handleSendMail}
-        onCancel={() => {
-          if (!loadingConfirm) {
-            setConfirmModalOpen(false);
-            setSelectedCandidate(null);
+        <div className="flex-grow overflow-auto">
+          <section className="space-y-4">
+            <h3 className="text-xl font-semibold text-gray-700 dark:text-white border-b pb-2">
+              Basic Information
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                  placeholder="Ex - Candidate Name"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Mail <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="Ex - Candidate Mail"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Mobile */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Mobile
+                </label>
+                <input
+                  type="text"
+                  name="mobile"
+                  value={form.mobile}
+                  onChange={handleChange}
+                  placeholder="Ex - Mobile Number"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Experience */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Experience <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="experience"
+                  value={form.experience}
+                  onChange={handleChange}
+                  required
+                  className="w-full border px-2 py-1.5 text-sm rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Experience</option>
+                  {experienceOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Department */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Department <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="departmentId"
+                  value={form.departmentId}
+                  onChange={handleChange}
+                  required
+                  className="w-full border px-2 py-1.5 text-sm rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Department</option>
+                  {departments.map((dep) => (
+                    <option key={dep.id} value={dep.id}>
+                      {dep.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Exam */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Exam
+                </label>
+                <select
+                  name="examId"
+                  value={form.examId}
+                  onChange={handleChange}
+                  className="w-full border px-2 py-1.5 text-sm rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Exam</option>
+                  {exams.map((exam) => (
+                    <option key={exam.id} value={exam.id}>
+                      {exam.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Active */}
+              <div className="flex items-center space-x-2 pt-3">
+                <input
+                  type="checkbox"
+                  name="isActive"
+                  checked={form.isActive}
+                  onChange={handleChange}
+                  className="h-4 w-4 border-gray-300 rounded text-green-600"
+                />
+                <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-white">
+                  Active Candidate
+                </label>
+              </div>
+
+              {/* Resume URL */}
+              {/* Resume Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Resume
+                </label>
+                <input
+                  type="file"
+                  name="resumeFile"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    setForm((prev) => ({ ...prev, resumeFile: file }));
+                  }}
+                  accept=".pdf,.doc,.docx"
+                  className="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-1 file:px-4
+               file:rounded-md file:border-0 file:text-sm file:font-semibold
+               file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {form.resumeUrl && (
+                  <p className="text-sm mt-1 text-gray-500 dark:text-gray-300">
+                    Current File: {form.resumeUrl.split("/").pop()}
+                  </p>
+                )}
+              </div>
+
+
+              {/* Job ID
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Job ID
+                </label>
+                <input
+                  type="number"
+                  name="jobId"
+                  value={form.jobId}
+                  onChange={handleChange}
+                  placeholder="Ex - Job ID"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                />
+              </div> */}
+
+              {/* Job Code */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Job Code
+                </label>
+                <input
+                  type="text"
+                  name="jobCode"
+                  value={form.jobCode}
+                  onChange={handleChange}
+                  placeholder="Ex - JOB-2025-001"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Application Stage */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Application Stage
+                </label>
+                <select
+                  name="applicationStage"
+                  value={form.applicationStage}
+                  onChange={handleChange}
+                  className="w-full border px-2 py-1.5 text-sm rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {applicationStageOptions.map((stage) => (
+                    <option key={stage} value={stage}>{stage}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Assigned Recruiter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Assigned Recruiter
+                </label>
+                <select
+                  name="assignedRecruiterId"
+                  value={form.assignedRecruiterId}
+                  onChange={handleChange}
+                  className="w-full border px-2 py-1.5 text-sm rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Recruiter</option>
+                  {/* TODO: populate from redux / API */}
+                </select>
+              </div>
+
+              {/* Remarks */}
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  Remarks
+                </label>
+                <textarea
+                  name="remarks"
+                  value={form.remarks}
+                  onChange={handleChange}
+                  placeholder="Any remarks..."
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder-gray-400 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                  rows={3}
+                />
+              </div>
+
+              {/* Resume Reviewed */}
+              <div className="flex items-center space-x-2 pt-3">
+                <input
+                  type="checkbox"
+                  name="resumeReviewed"
+                  checked={form.resumeReviewed}
+                  onChange={handleChange}
+                  className="h-4 w-4 border-gray-300 rounded text-green-600"
+                />
+                <label htmlFor="resumeReviewed" className="text-sm text-gray-700 dark:text-white">
+                  Resume Reviewed
+                </label>
+              </div>
+
+              {/* HR Rating */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+                  HR Rating
+                </label>
+                <select
+                  name="hrRating"
+                  value={form.hrRating}
+                  onChange={handleChange}
+                  className="w-full border px-2 py-1.5 text-sm rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Rating</option>
+                  {hrRatingOptions.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+            </div>
+          </section>
+        </div>
+
+        <FormActionButtons
+          loading={loading}
+          onBackClick={() =>
+            navigate(`/module/${modulePath}/candidate_management`)
           }
-        }}
-        loading={loadingConfirm}
-      />
-
-      <ConfirmModal
-        open={reassignModalOpen}
-        title="Reassign Exam"
-        message={
-          selectedReassignCandidate &&
-          `Do you really want to reassign the exam to ${selectedReassignCandidate.name}?`
-        }
-        onConfirm={handleReassign}
-        onCancel={() => {
-          if (!reassignLoading) {
-            setReassignModalOpen(false);
-            setSelectedReassignCandidate(null);
-          }
-        }}
-        loading={reassignLoading}
-      />
-
-
+          onSubmitClick={handleSubmit}
+          isEditMode={isEditMode}
+          isFormValid={isFormValid} // <-- Pass the validation flag here
+        />
+      </form>
     </div>
   );
 };
 
-export default CandidatePage;
+export default CandidateForm;
