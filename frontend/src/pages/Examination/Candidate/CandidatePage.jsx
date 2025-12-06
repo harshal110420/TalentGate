@@ -44,6 +44,7 @@ const CandidatePage = () => {
     examId: "",
     status: "all",
     examStatus: "all",
+    source: "all"
   });
 
   // Pagination states
@@ -68,6 +69,7 @@ const CandidatePage = () => {
   const filteredCandidates = useMemo(() => {
     return candidates.filter((c) => {
       const searchText = filters.search.toLowerCase();
+
       const matchesSearch =
         c.name?.toLowerCase().includes(searchText) ||
         c.email?.toLowerCase().includes(searchText) ||
@@ -76,29 +78,39 @@ const CandidatePage = () => {
       const matchesDept = filters.departmentId
         ? c.departmentId === Number(filters.departmentId)
         : true;
+
       const matchesExam = filters.examId
         ? c.examId === Number(filters.examId)
         : true;
+
       const matchesStatus =
         filters.status === "all"
           ? true
           : filters.status === "true"
             ? c.isActive
             : !c.isActive;
+
       const matchesExamStatus =
         filters.examStatus === "all"
           ? true
           : c.examStatus === filters.examStatus;
+
+      const matchesSource =
+        filters.source === "all"
+          ? true
+          : c.source === filters.source;
 
       return (
         matchesSearch &&
         matchesDept &&
         matchesExam &&
         matchesStatus &&
-        matchesExamStatus
+        matchesExamStatus &&
+        matchesSource
       );
     });
   }, [candidates, filters]);
+
 
   // Pagination logic
   const totalPages = Math.ceil(filteredCandidates.length / rowsPerPage);
@@ -202,6 +214,17 @@ const CandidatePage = () => {
           className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm flex-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800"
         />
         <select
+          value={filters.source}
+          onChange={(e) => setFilters({ ...filters, source: e.target.value })}
+          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
+
+        >
+          <option value="all">All Sources</option>
+          <option value="offline">Offline</option>
+          <option value="online">Online</option>
+        </select>
+
+        <select
           value={filters.departmentId}
           onChange={(e) =>
             setFilters({ ...filters, departmentId: e.target.value })
@@ -253,7 +276,7 @@ const CandidatePage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1300px] w-full text-sm">
+        <table className="min-w-[1500px] w-full text-sm">
           <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
             <tr>
               <th className="px-4 py-3 text-left">Name</th>
@@ -261,6 +284,7 @@ const CandidatePage = () => {
               <th className="px-4 py-3 text-left">Mobile</th>
               <th className="px-4 py-3 text-left">Department</th>
               <th className="px-4 py-3 text-left">Exam</th>
+              <th className="px-4 py-3 text-left">Source</th>
               <th className="px-4 py-3 text-left">Exam Status</th>
               <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-center">Resume</th>
@@ -295,6 +319,19 @@ const CandidatePage = () => {
                   <td className="px-4 py-2">{c.mobile || "-"}</td>
                   <td className="px-4 py-2">{c.department?.name || "-"}</td>
                   <td className="px-4 py-2">{c.exam?.name || "-"}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+      ${c.source === "online"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-blue-100 text-blue-700"
+                        }
+    `}
+                    >
+                      {c.source === "online" ? "Online" : "Offline"}
+                    </span>
+                  </td>
+
                   <td className="px-4 py-2">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.examStatus === "Assigned"
