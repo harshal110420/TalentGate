@@ -46,8 +46,8 @@ const RolesPage = () => {
       statusFilter === "all"
         ? true
         : statusFilter === "active"
-        ? role.isActive === true
-        : role.isActive === false;
+          ? role.isActive === true
+          : role.isActive === false;
     return matchesName && matchesStatus;
   });
 
@@ -119,21 +119,19 @@ const RolesPage = () => {
             ) : (
               filteredRoles.map((role, index) => (
                 <tr
-                  key={role.roleId}
-                  className={`transition-colors duration-150 ${
-                    index % 2 === 0
-                      ? "bg-white dark:bg-gray-900"
-                      : "bg-gray-50 dark:bg-gray-800"
-                  } hover:bg-blue-50 dark:hover:bg-gray-700`}
+                  key={role.id || `role-${index}`}
+                  className={`transition-colors duration-150 ${index % 2 === 0
+                    ? "bg-white dark:bg-gray-900"
+                    : "bg-gray-50 dark:bg-gray-800"
+                    } hover:bg-blue-50 dark:hover:bg-gray-700`}
                 >
                   <td className="px-4 py-2">{role.displayName}</td>
                   <td className="px-4 py-2">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        role.isActive
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${role.isActive
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                        }`}
                     >
                       {role.isActive ? "Active" : "Inactive"}
                     </span>

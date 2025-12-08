@@ -27,6 +27,7 @@ const LevelForm = () => {
   const { selected: levelData, loading } = useSelector((state) => state.level);
 
   const [formData, setFormData] = useState(initialFormData);
+  const [initialValues, setInitialValues] = useState(initialFormData);
   const [currentStep, setCurrentStep] = useState(0);
 
   const modules = useSelector((state) => state.modules.list);
@@ -41,15 +42,16 @@ const LevelForm = () => {
 
   useEffect(() => {
     if (isEditMode && levelData && levelData.id === parseInt(id)) {
-      setFormData({
+      const loadedData = {
         name: levelData.name || "",
         isActive: levelData.isActive ?? true,
-      });
+      };
+      setFormData(loadedData);
+      setInitialValues(loadedData);
     }
   }, [levelData, isEditMode, id]);
 
   useEffect(() => {
-    console.log("📦 levelData:", levelData);
   }, [levelData]);
 
   const handleChange = (e) => {
@@ -59,6 +61,23 @@ const LevelForm = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
+
+  const hasChanges = () => {
+    return Object.keys(formData).some(key => {
+      if (Array.isArray(formData[key])) {
+        return JSON.stringify(formData[key]) !== JSON.stringify(initialValues[key]);
+      }
+      return formData[key] !== initialValues[key];
+    });
+  };
+
+  // update isFormValid to include change check
+  const isFormValid = () => {
+    const requiredFilled =
+      formData.name.trim() !== "";
+    return requiredFilled && (!isEditMode || hasChanges());
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,7 +90,6 @@ const LevelForm = () => {
       toast.success(`Level ${isEditMode ? "updated" : "created"} successfully`);
       navigate(`/module/${modulePath}/level_management`);
     } catch (err) {
-      console.error("❌ Level form error:", err);
       const errorMsg =
         err?.message ||
         err?.error ||
@@ -102,10 +120,9 @@ const LevelForm = () => {
                 type="button"
                 onClick={() => setCurrentStep(index)}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 rounded-t-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                  ${
-                    currentStep === index
-                      ? "border-blue-600 text-blue-600 dark:text-blue-300 dark:border-blue-400 bg-gray-100 dark:bg-gray-800"
-                      : "border-transparent text-gray-500 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ${currentStep === index
+                    ? "border-blue-600 text-blue-600 dark:text-blue-300 dark:border-blue-400 bg-gray-100 dark:bg-gray-800"
+                    : "border-transparent text-gray-500 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                   }
                 `}
               >
@@ -162,8 +179,14 @@ const LevelForm = () => {
         <FormActionButtons
           loading={loading}
           isEditMode={isEditMode}
-          onBackClick={() => navigate(`/module/${modulePath}/level_management`)}
-          onSubmitClick={handleSubmit}
+          currentStep={currentStep}
+          totalSteps={steps.length}
+          isLastStep={currentStep === steps.length - 1}
+          isFormValid={isFormValid()}
+          hideSubmit={false}
+          onPrevious={() => setCurrentStep(p => p - 1)}
+          onNext={() => setCurrentStep(p => p + 1)}
+          onSubmitClick={() => { }}
         />
       </form>
     </div>

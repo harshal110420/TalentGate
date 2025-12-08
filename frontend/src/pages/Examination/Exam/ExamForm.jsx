@@ -41,6 +41,7 @@ const ExamForm = () => {
   );
 
   const [formData, setFormData] = useState(initialFormData);
+  const [initialValues, setInitialValues] = useState(initialFormData);
   const [currentStep, setCurrentStep] = useState(0);
   const [questionBank, setQuestionBank] = useState([]);
   const [manuallySelectedQuestions, setManuallySelectedQuestions] = useState(
@@ -86,7 +87,7 @@ const ExamForm = () => {
   // Populate form in edit mode
   useEffect(() => {
     if (isEditMode && examData) {
-      setFormData({
+      const loadedData = {
         name: examData.name || "",
         departmentId: examData.departmentId || "",
         levelId: examData.levelId || "",
@@ -94,8 +95,9 @@ const ExamForm = () => {
         negativeMarking: examData.negativeMarking || 0,
         isActive: examData.isActive ?? true,
         questionIds: examData.questionIds || [],
-      });
-
+      };
+      setFormData(loadedData);
+      setInitialValues(loadedData);
       // Separate manual vs random based on a flag if you have one, else all in manual
       setManuallySelectedQuestions(examData.questions || []);
       setRandomSelectedQuestions([]);
@@ -241,6 +243,27 @@ const ExamForm = () => {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setQuestionFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const hasChanges = () => {
+    return Object.keys(formData).some(key => {
+      if (Array.isArray(formData[key])) {
+        return JSON.stringify(formData[key]) !== JSON.stringify(initialValues[key]);
+      }
+      return formData[key] !== initialValues[key];
+    });
+  };
+
+  // update isFormValid to include change check
+  const isFormValid = () => {
+    const requiredFilled =
+      formData.name.trim() !== "" &&
+      formData.departmentId !== "" &&
+      formData.levelId !== "" &&
+      formData.questionIds !== "" &&
+      formData.positiveMarking !== "" &&
+      formData.negativeMarking !== "";
+    return requiredFilled && (!isEditMode || hasChanges());
   };
 
   const handleSubmit = async (e) => {
@@ -760,8 +783,16 @@ const ExamForm = () => {
         </div>
 
         <FormActionButtons
+          loading={loading}
+          isEditMode={isEditMode}
+          currentStep={currentStep}
+          totalSteps={steps.length}
           isLastStep={currentStep === steps.length - 1}
-          onPrevious={() => setCurrentStep((prev) => prev - 1)}
+          isFormValid={isFormValid()}
+          hideSubmit={false}
+          onPrevious={() => setCurrentStep(p => p - 1)}
+          onNext={() => setCurrentStep(p => p + 1)}
+          onSubmitClick={() => { }}
         />
       </form>
     </div>

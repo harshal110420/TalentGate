@@ -16,6 +16,17 @@ import SkeletonForm from "../../../components/skeletons/skeletonForm";
 import { fetchSubjectsByDepartment } from "../../../features/subject/subjectSlice";
 import FormActionButtons from "../../../components/common/FormActionButtons";
 
+const initialFormData = {
+  question: "",
+  options: ["", "", "", ""],
+  correct: "",
+  timeLimit: "",
+  subjectId: "",
+  levelId: "",
+  departmentId: "",
+  isActive: true,
+};
+
 const steps = ["Basic Info"];
 
 const QuestionForm = () => {
@@ -38,16 +49,9 @@ const QuestionForm = () => {
 
   const [currentStep, setCurrentStep] = useState(0);
 
-  const [form, setForm] = useState({
-    question: "",
-    options: ["", "", "", ""],
-    correct: "",
-    timeLimit: "",
-    subjectId: "",
-    levelId: "",
-    departmentId: "",
-    isActive: true,
-  });
+  const [form, setForm] = useState(initialFormData);
+  const [initialValues, setInitialValues] = useState(initialFormData);
+
 
   useEffect(() => {
     dispatch(fetchAllSubjects());
@@ -62,7 +66,7 @@ const QuestionForm = () => {
 
   useEffect(() => {
     if (selectedQuestion && id) {
-      setForm({
+      const loadedData = {
         question: selectedQuestion.question || "",
         options: selectedQuestion.options || ["", "", "", ""],
         correct: selectedQuestion.correct || "",
@@ -74,13 +78,37 @@ const QuestionForm = () => {
           typeof selectedQuestion.isActive === "boolean"
             ? selectedQuestion.isActive
             : true,
-      });
+      };
+      setForm(loadedData);
+      setInitialValues(loadedData);
     }
-  }, [selectedQuestion, id]);
+  }, [selectedQuestion, id, isEditMode]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+  };
+
+  const hasChanges = () => {
+    return Object.keys(form).some(key => {
+      if (Array.isArray(form[key])) {
+        return JSON.stringify(form[key]) !== JSON.stringify(initialValues[key]);
+      }
+      return form[key] !== initialValues[key];
+    });
+  };
+
+  // update isFormValid to include change check
+  const isFormValid = () => {
+    const requiredFilled =
+      form.question.trim() !== "" &&
+      form.options !== "" &&
+      form.correct !== "" &&
+      form.timeLimit !== "" &&
+      form.subjectId !== "" &&
+      form.levelId !== "" &&
+      form.departmentId !== "";
+    return requiredFilled && (!isEditMode || hasChanges());
   };
 
   useEffect(() => {
@@ -317,11 +345,15 @@ const QuestionForm = () => {
         {/* Action Buttons */}
         <FormActionButtons
           loading={loading}
-          onBackClick={() =>
-            navigate(`/module/${modulePath}/question_management`)
-          }
-          onSubmitClick={handleSubmit}
           isEditMode={isEditMode}
+          currentStep={currentStep}
+          totalSteps={steps.length}
+          isLastStep={currentStep === steps.length - 1}
+          isFormValid={isFormValid()}
+          hideSubmit={false}
+          onPrevious={() => setCurrentStep(p => p - 1)}
+          onNext={() => setCurrentStep(p => p + 1)}
+          onSubmitClick={() => { }}
         />
       </form>
     </div>

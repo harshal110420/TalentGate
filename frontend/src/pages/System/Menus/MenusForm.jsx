@@ -43,6 +43,8 @@ const MenuForm = () => {
   const { list: moduleList, loading: moduleLoading } = useSelector(
     (state) => state.modules
   );
+  const [initialValues, setInitialValues] = useState(initialFormData);
+
 
   useEffect(() => {
     dispatch(fetchAllModules());
@@ -54,7 +56,7 @@ const MenuForm = () => {
 
   useEffect(() => {
     if (isEditMode && menuById && Object.keys(menuById).length > 0) {
-      setFormData({
+      const loadedData = {
         name: menuById.name || "",
         module: menuById.module?.name || "",
         category: menuById.type || "",
@@ -62,9 +64,32 @@ const MenuForm = () => {
         parentCode: menuById.parentCode || "root",
         isActive: menuById.isActive ?? true,
         orderBy: menuById.orderBy || "",
-      });
+      };
+      setFormData(loadedData);
+      setInitialValues(loadedData);
     }
   }, [isEditMode, menuById]);
+
+  const hasChanges = () => {
+    return Object.keys(formData).some(key => {
+      if (Array.isArray(formData[key])) {
+        return JSON.stringify(formData[key]) !== JSON.stringify(initialValues[key]);
+      }
+      return formData[key] !== initialValues[key];
+    });
+  };
+
+  // update isFormValid to include change check
+  const isFormValid = () => {
+    const requiredFilled =
+      formData.name.trim() !== "" &&
+      formData.menuId.trim() !== "" &&
+      formData.category !== "" &&
+      formData.module !== "";
+
+    return requiredFilled && (!isEditMode || hasChanges());
+  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,11 +152,10 @@ const MenuForm = () => {
                 type="button"
                 onClick={() => setCurrentStep(index)}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 rounded-t-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                ${
-                  currentStep === index
+                ${currentStep === index
                     ? "border-blue-600 text-blue-600 dark:text-blue-300 dark:border-blue-400 bg-gray-100 dark:bg-gray-800"
                     : "border-transparent text-gray-500 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }
+                  }
               `}
               >
                 {step}
@@ -295,11 +319,15 @@ const MenuForm = () => {
         </div>
         <FormActionButtons
           loading={loading}
-          onBackClick={() =>
-            navigate(`/module/${modulePath}/menu_management`)
-          }
-          onSubmitClick={handleSubmit}
           isEditMode={isEditMode}
+          currentStep={currentStep}
+          totalSteps={steps.length}
+          isLastStep={currentStep === steps.length - 1}
+          isFormValid={isFormValid()}
+          hideSubmit={false}
+          onPrevious={() => setCurrentStep(p => p - 1)}
+          onNext={() => setCurrentStep(p => p + 1)}
+          onSubmitClick={() => { }}
         />
       </form>
     </div>

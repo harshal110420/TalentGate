@@ -691,9 +691,6 @@ const CandidateForm = () => {
           hideSubmit={false}
           onPrevious={() => setCurrentStep(p => p - 1)}
           onNext={() => setCurrentStep(p => p + 1)}
-          // onBackClick={() =>
-          //   navigate(`/module/${modulePath}/candidate_management`)
-          // }
           onSubmitClick={() => { }}
 
         />

@@ -35,8 +35,8 @@ const UserForm = () => {
   const isEditMode = Boolean(id);
 
   const [formData, setFormData] = useState(initialFormData);
+  const [initialValues, setInitialValues] = useState(initialFormData);
   const [currentStep, setCurrentStep] = useState(0);
-
   const modules = useSelector((state) => state.modules.list);
   const menus = useSelector((state) => state.menus.list);
   const modulePath = getModulePathByMenu("user_management", modules, menus);
@@ -56,7 +56,7 @@ const UserForm = () => {
 
   useEffect(() => {
     if (isEditMode && selectedUser && Object.keys(selectedUser).length > 0) {
-      setFormData({
+      const loadedData = {
         mail: selectedUser.mail || "",
         username: selectedUser.username || "",
         firstName: selectedUser.firstName || "",
@@ -66,7 +66,9 @@ const UserForm = () => {
         roleId: selectedUser.roleId?.toString() || "",
         departmentId: selectedUser.departmentId?.toString() || "",
         isActive: selectedUser.isActive ?? true,
-      });
+      };
+      setFormData(loadedData);
+      setInitialValues(loadedData);
     }
   }, [isEditMode, selectedUser]);
 
@@ -76,6 +78,29 @@ const UserForm = () => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const hasChanges = () => {
+    return Object.keys(formData).some(key => {
+      if (Array.isArray(formData[key])) {
+        return JSON.stringify(formData[key]) !== JSON.stringify(initialValues[key]);
+      }
+      return formData[key] !== initialValues[key];
+    });
+  };
+
+  // update isFormValid to include change check
+  const isFormValid = () => {
+    const requiredFilled =
+      formData.mail.trim() !== "" &&
+      formData.username.trim() !== "" &&
+      formData.firstName.trim() !== "" &&
+      formData.lastName.trim() !== "" &&
+      formData.roleId.trim() !== "" &&
+      formData.departmentId.trim() !== "" &&
+      (isEditMode || formData.password.trim() !== "") &&
+      formData.mobile.trim() !== "";
+    return requiredFilled && (!isEditMode || hasChanges());
   };
 
   const handleSubmit = async (e) => {
@@ -310,12 +335,18 @@ const UserForm = () => {
 
         <FormActionButtons
           loading={isLoading}
-          onBackClick={() => navigate(`/module/${modulePath}/user_management`)}
-          onSubmitClick={handleSubmit}
           isEditMode={isEditMode}
+          currentStep={currentStep}
+          totalSteps={steps.length}
+          isLastStep={currentStep === steps.length - 1}
+          isFormValid={isFormValid()}
+          hideSubmit={false}
+          onPrevious={() => setCurrentStep(p => p - 1)}
+          onNext={() => setCurrentStep(p => p + 1)}
+          onSubmitClick={() => { }}
         />
       </form>
-    </div>
+    </div >
   );
 };
 
