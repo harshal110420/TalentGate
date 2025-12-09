@@ -57,9 +57,10 @@ const applicationStageOptions = [
   "Applied",
   "Resume Reviewed",
   "Shortlisted",
+  "Exam Assigned",
+  "Exam Completed",
   "Interview Scheduled",
   "Interview Passed",
-  "Exam Assigned",
   "Selected",
   "Rejected",
   "Hired",
@@ -84,7 +85,7 @@ const initialForm = {
   applicationStage: "Applied",
   assignedRecruiterId: "",
   remarks: "",
-  resumeReviewed: false,
+  // resumeReviewed: false,
   hrRating: "",
 };
 
@@ -149,7 +150,7 @@ const CandidateForm = () => {
         applicationStage: selected.applicationStage || "Applied",
         assignedRecruiterId: selected.assignedRecruiterId || "",
         remarks: selected.remarks || "",
-        resumeReviewed: selected.resumeReviewed || false,
+        // resumeReviewed: selected.resumeReviewed || false,
         hrRating: selected.hrRating || "",
       };
       setForm(loadedData);
@@ -637,7 +638,7 @@ const CandidateForm = () => {
                 </div>
 
                 {/* Resume Reviewed */}
-                <div className="flex items-center space-x-2 pt-3">
+                {/* <div className="flex items-center space-x-2 pt-3">
                   <input
                     type="checkbox"
                     name="resumeReviewed"
@@ -648,7 +649,7 @@ const CandidateForm = () => {
                   <label htmlFor="resumeReviewed" className="text-sm text-gray-700 dark:text-white">
                     Resume Reviewed
                   </label>
-                </div>
+                </div> */}
 
 
               </div>

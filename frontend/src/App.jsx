@@ -57,7 +57,7 @@ function App() {
           </Routes>
 
           {/* ToastContainer is placed here to display notifications globally */}
-          <ToastContainer position="top-center" autoClose={800} />
+          <ToastContainer position="top-center" autoClose={1500} />
         </Router>
       </AuthProvider>
     </ThemeProvider>

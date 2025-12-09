@@ -69,9 +69,10 @@ module.exports = () => {
           "Applied",
           "Resume Reviewed",
           "Shortlisted",
+          "Exam Assigned",
+          "Exam Completed",
           "Interview Scheduled",
           "Interview Passed",
-          "Exam Assigned",
           "Selected",
           "Rejected",
           "Hired"

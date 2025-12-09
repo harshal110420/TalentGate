@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCandidates, reassignExam } from "../../../features/Candidate/candidateSlice";
+import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidate } from "../../../features/Candidate/candidateSlice";
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ const CandidatePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [sendingId, setSendingId] = useState(null);
+  const NA = "Not Available";
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [reassignModalOpen, setReassignModalOpen] = useState(false);
@@ -179,6 +180,62 @@ const CandidatePage = () => {
       setReassignLoading(false);
     }
   };
+  const stageBadgeClasses = (stage) => {
+    switch (stage) {
+      case "Applied":
+        return "bg-gray-100 text-gray-700";
+
+      case "Resume Reviewed":
+        return "bg-blue-100 text-blue-700";
+
+      case "Shortlisted":
+        return "bg-indigo-100 text-indigo-700";
+
+      case "Exam Assigned":
+        return "bg-yellow-100 text-yellow-800";
+
+      case "Exam Completed":
+        return "bg-purple-100 text-purple-700";
+
+      case "Interview Scheduled":
+        return "bg-orange-100 text-orange-700";
+
+      case "Interview Passed":
+        return "bg-teal-100 text-teal-700";
+
+      case "Selected":
+        return "bg-green-100 text-green-700";
+
+      case "Hired":
+        return "bg-emerald-100 text-emerald-700 font-semibold";
+
+      case "Rejected":
+        return "bg-red-100 text-red-700";
+
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  const handleResumeReview = async (id) => {
+    try {
+      await dispatch(markResumeReviewed(id)).unwrap();
+      toast.success("Resume reviewed!");
+      dispatch(fetchAllCandidates());
+    } catch (err) {
+      toast.error(err || "Failed to mark resume reviewed");
+    }
+  };
+
+  const handleShortlist = async (id) => {
+    try {
+      await dispatch(shortlistCandidate(id)).unwrap();
+      toast.success("Candidate shortlisted!");
+      dispatch(fetchAllCandidates());
+    } catch (err) {
+      toast.error(err || "Shortlisting failed");
+    }
+  };
 
 
 
@@ -238,7 +295,7 @@ const CandidatePage = () => {
             </option>
           ))}
         </select>
-        <select
+        {/* <select
           value={filters.examId}
           onChange={(e) => setFilters({ ...filters, examId: e.target.value })}
           className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
@@ -249,7 +306,7 @@ const CandidatePage = () => {
               {e.name}
             </option>
           ))}
-        </select>
+        </select> */}
         <select
           value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value })}
@@ -276,22 +333,28 @@ const CandidatePage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1500px] w-full text-sm">
+        <table className="min-w-[1400px] w-full text-sm">
           <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
             <tr>
               <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Email</th>
-              <th className="px-4 py-3 text-left">Mobile</th>
+              {/* <th className="px-4 py-3 text-left">Email</th>
+              <th className="px-4 py-3 text-left">Mobile</th> */}
               <th className="px-4 py-3 text-left">Department</th>
-              <th className="px-4 py-3 text-left">Exam</th>
               <th className="px-4 py-3 text-left">Source</th>
+              <th className="px-4 py-3 text-left">Application Stage</th>
               <th className="px-4 py-3 text-left">Exam Status</th>
-              <th className="px-4 py-3 text-left">Status</th>
               <th className="px-4 py-3 text-center">Resume</th>
+              {/* <th className="px-4 py-3 text-left">Exam</th> */}
               <th className="px-4 py-3 text-left">Last Mail</th>
+              <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-center sticky right-[90px] bg-gray-100 dark:bg-gray-800 border-l">
+                Quick Actions
+              </th>
+
               <th className="px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 border-l">
                 Actions
               </th>
+
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-950">
@@ -315,23 +378,30 @@ const CandidatePage = () => {
                   <td className="px-4 py-2 text-[14px] font-medium">
                     {c.name}
                   </td>
-                  <td className="px-4 py-2">{c.email}</td>
-                  <td className="px-4 py-2">{c.mobile || "-"}</td>
+                  {/* <td className="px-4 py-2">{c.email}</td>
+                  <td className="px-4 py-2">{c.mobile || "-"}</td> */}
                   <td className="px-4 py-2">{c.department?.name || "-"}</td>
-                  <td className="px-4 py-2">{c.exam?.name || "-"}</td>
                   <td className="px-4 py-2">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
-      ${c.source === "online"
+                        ${c.source === "online"
                           ? "bg-green-100 text-green-700"
                           : "bg-blue-100 text-blue-700"
                         }
-    `}
+                        `}
                     >
                       {c.source === "online" ? "Online" : "Offline"}
                     </span>
                   </td>
-
+                  <td className="px-4 py-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap
+      ${stageBadgeClasses(c.applicationStage)}
+    `}
+                    >
+                      {c.applicationStage}
+                    </span>
+                  </td>
                   <td className="px-4 py-2">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.examStatus === "Assigned"
@@ -348,16 +418,7 @@ const CandidatePage = () => {
                       {c.examStatus || "Not assigned"}
                     </span>
                   </td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                        }`}
-                    >
-                      {c.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
+
                   <td className="px-4 py-2 text-center">
                     {c.resumeUrl ? (
                       <a
@@ -369,7 +430,7 @@ const CandidatePage = () => {
         inline-flex items-center gap-1 px-2 py-1 
         text-xs rounded-md bg-blue-100 text-blue-700
         hover:bg-blue-200 transition
-      "
+        "
                       >
                         Download
                       </a>
@@ -378,9 +439,83 @@ const CandidatePage = () => {
                     )}
                   </td>
 
+                  {/* <td className="px-4 py-2">{c.exam?.name || "-"}</td> */}
                   <td className="px-4 py-2">{formatToIST(c.lastMailSentAt)}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.isActive
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                        }`}
+                    >
+                      {c.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-center sticky right-[80px] bg-gray-50 dark:bg-gray-800 border-l">
+                    <div className="flex justify-center items-center gap-2">
+                      {/* ===== RESUME REVIEW ===== */}
+                      {c.applicationStage === "Applied" && c.resumeReviewed !== true && (
+                        <button
+                          onClick={() => handleResumeReview(c.id)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
+                          title="Review Resume"
+                        >
+                          Review
+                        </button>
+                      )}
+
+
+                      {/* ===== SHORTLIST ===== */}
+                      {c.applicationStage === "Resume Reviewed" && (
+                        <button
+                          onClick={() => handleShortlist(c.id)}
+                          className="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded text-xs"
+                          title="Shortlist Candidate"
+                        >
+                          Shortlist
+                        </button>
+                      )}
+
+                      {/* ===== SEND EXAM MAIL ===== */}
+                      {c.examStatus === "Assigned" && (
+                        <button
+                          onClick={() => {
+                            setSelectedCandidate(c);
+                            setConfirmModalOpen(true);
+                          }}
+                          disabled={sendingId === c.id}
+                          className={`${sendingId === c.id
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                            } text-white p-1.5 rounded-full transition`}
+                          title="Send Exam Mail"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* ===== REASSIGN EXAM ===== */}
+                      {c.examStatus === "Assigned" && (
+                        <button
+                          onClick={() => {
+                            setSelectedReassignCandidate(c);
+                            setSelectedExamId(c.examId || "");
+                            setReassignModalOpen(true);
+                          }}
+                          className="text-purple-600 hover:text-purple-800 p-1 rounded-full transition"
+                          title="Reassign Exam"
+                        >
+                          <RefreshCcw className="w-4 h-4" />
+                        </button>
+                      )}
+
+                    </div>
+                  </td>
+
                   <td className="px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 border-l">
                     <div className="flex justify-center items-center gap-2">
+
+                      {/* VIEW */}
                       <button
                         onClick={() => {
                           setSelectedViewCandidate(c);
@@ -391,15 +526,12 @@ const CandidatePage = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <ButtonWrapper
-                        subModule="Candidate Management"
-                        permission="edit"
-                      >
+
+                      {/* EDIT */}
+                      <ButtonWrapper subModule="Candidate Management" permission="edit">
                         <button
                           onClick={() =>
-                            navigate(
-                              `/module/${modulePath}/candidate_management/update/${c.id}`
-                            )
+                            navigate(`/module/${modulePath}/candidate_management/update/${c.id}`)
                           }
                           className="text-blue-600 hover:text-blue-800 p-1 rounded-full transition"
                           title="Edit Candidate"
@@ -407,33 +539,6 @@ const CandidatePage = () => {
                           <Pencil className="w-4 h-4" />
                         </button>
                       </ButtonWrapper>
-                      <button
-                        onClick={() => {
-                          setSelectedCandidate(c);
-                          setConfirmModalOpen(true);
-                        }}
-                        disabled={sendingId === c.id}
-                        className={`${sendingId === c.id
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                          } text-white p-1.5 rounded-full transition`}
-                        title="Send Exam Mail"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedReassignCandidate(c);
-                          setSelectedExamId(c.examId || "");
-                          setReassignModalOpen(true);
-                        }}
-                        className="text-purple-600 hover:text-purple-800 p-1 rounded-full transition"
-                        title="Reassign Exam"
-                      >
-                        <RefreshCcw className="w-4 h-4" />
-                      </button>
-
-
 
                     </div>
                   </td>
@@ -577,13 +682,27 @@ const CandidatePage = () => {
                 {/* ----- Job Details ----- */}
                 <div>
                   <h5 className="font-bold mb-1">Job Details</h5>
+
                   <div className="grid grid-cols-3 gap-4 text-gray-600">
-                    <p><b>Job Code:</b> {selectedViewCandidate.jobCode}</p>
-                    <p><b>Job Title:</b> {selectedViewCandidate.job?.title}</p>
-                    <p><b>Job Designation:</b> {selectedViewCandidate?.job.designation}</p>
-                    <p><b>Department:</b> {selectedViewCandidate.department.name}</p>
+                    <p>
+                      <b>Job Code:</b>
+                      {selectedViewCandidate?.jobCode || NA}
+                    </p>
+                    <p>
+                      <b>Job Title:</b>
+                      {selectedViewCandidate?.job?.title || NA}
+                    </p>
+                    <p>
+                      <b>Job Designation:</b>
+                      {selectedViewCandidate?.job?.designation || NA}
+                    </p>
+                    <p>
+                      <b>Department:</b>
+                      {selectedViewCandidate?.department?.name || NA}
+                    </p>
                   </div>
                 </div>
+
 
                 {/* ----- Exam Status ----- */}
                 <div>

@@ -58,6 +58,36 @@ export const updateCandidate = createAsyncThunk(
   }
 );
 
+export const markResumeReviewed = createAsyncThunk(
+  "candidate/resumeReviewed",
+  async (id, thunkAPI) => {
+    try {
+      const res = await axiosInstance.patch(
+        `/candidate/mark-resume-reviewed/${id}`
+      );
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Marking resume reviewed failed"
+      );
+    }
+  }
+);
+
+export const shortlistCandidate = createAsyncThunk(
+  "candidate/shortlist",
+  async (id, thunkAPI) => {
+    try {
+      const res = await axiosInstance.post(`/candidate/shortlist/${id}`);
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Shortlisting failed"
+      );
+    }
+  }
+);
+
 export const deleteCandidate = createAsyncThunk(
   "candidate/delete",
   async (id, thunkAPI) => {
@@ -186,6 +216,43 @@ const candidateSlice = createSlice({
       .addCase(updateCandidate.rejected, (state, action) => {
         state.loading = false;
         state.updateSuccess = false;
+        state.error = action.payload;
+      })
+
+      .addCase(markResumeReviewed.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(markResumeReviewed.fulfilled, (state, action) => {
+        state.loading = false;
+        const updated = action.payload;
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) {
+          state.list[idx] = updated;
+        }
+      })
+      .addCase(markResumeReviewed.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(shortlistCandidate.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(shortlistCandidate.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+
+        if (idx !== -1) {
+          state.list[idx] = updated;
+        }
+
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(shortlistCandidate.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       })
       // Delete

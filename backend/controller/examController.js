@@ -357,6 +357,7 @@ const submitExam = async (req, res) => {
 
     // ✅ Update candidate safely
     candidate.examStatus = "Completed";
+    candidate.applicationStage = "Exam Completed";
     await candidate.save({ transaction });
 
     await transaction.commit();

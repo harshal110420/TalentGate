@@ -113,7 +113,7 @@ const updateCandidate = asyncHandler(async (req, res) => {
   if (!candidate) {
     return res.status(404).json({ message: "Candidate not found" });
   }
-  // Destructure body
+
   const {
     name,
     email,
@@ -133,12 +133,12 @@ const updateCandidate = asyncHandler(async (req, res) => {
     hrRating,
   } = req.body;
 
-  const resumeUrlFinal = req.file?.path || resumeUrl || candidate.resumeUrl;
+  /* ---------------- HELPERS ---------------- */
 
-  // Helper functions
   const sanitizeNumber = (val, fallback = null) => {
     if (val === undefined || val === null || val === "" || val === "null")
       return fallback;
+
     const num = Number(val);
     return isNaN(num) ? fallback : num;
   };
@@ -150,7 +150,8 @@ const updateCandidate = asyncHandler(async (req, res) => {
     return fallback;
   };
 
-  // Sanitize values
+  /* ---------------- SANITIZATION ---------------- */
+
   const sanitizedExamId = sanitizeNumber(examId);
   const sanitizedDepartmentId = sanitizeNumber(
     departmentId,
@@ -169,7 +170,35 @@ const updateCandidate = asyncHandler(async (req, res) => {
     candidate.resumeReviewed
   );
 
-  // Prepare updated fields
+  const resumeUrlFinal = req.file?.path || resumeUrl || candidate.resumeUrl;
+
+  /* ---------------- SHORTLIST VALIDATION ---------------- */
+
+  if (
+    applicationStage === "Shortlisted" &&
+    candidate.resumeReviewed !== true &&
+    sanitizedResumeReviewed !== true
+  ) {
+    return res.status(400).json({
+      message: "Candidate can be shortlisted only after resume is reviewed.",
+    });
+  }
+
+  /* ---------------- EXAM ASSIGN VALIDATION ---------------- */
+  const effectiveStage = applicationStage || candidate.applicationStage;
+
+  if (
+    sanitizedExamId && // exam assign ho raha hai
+    sanitizedExamId !== candidate.examId && // exam change ho raha hai
+    effectiveStage !== "Shortlisted"
+  ) {
+    return res.status(400).json({
+      message: "Exam can be assigned only to SHORTLISTED candidates.",
+    });
+  }
+
+  /* ---------------- UPDATE PAYLOAD ---------------- */
+
   const updatedFields = {
     name: name ?? candidate.name,
     email: email ?? candidate.email,
@@ -182,7 +211,6 @@ const updateCandidate = asyncHandler(async (req, res) => {
     source: source ?? candidate.source,
     jobId: sanitizedJobId,
     jobCode: jobCode ?? candidate.jobCode,
-    applicationStage: applicationStage ?? candidate.applicationStage,
     assignedRecruiterId: sanitizedAssignedRecruiterId,
     remarks: remarks ?? candidate.remarks,
     resumeReviewed: sanitizedResumeReviewed,
@@ -190,15 +218,38 @@ const updateCandidate = asyncHandler(async (req, res) => {
     updated_by: req.user?.id || null,
   };
 
-  // Update examStatus only if examId changed
-  if (sanitizedExamId !== candidate.examId) {
-    if (sanitizedExamId) {
-      updatedFields.examStatus = "Assigned";
-    } else {
-      updatedFields.examStatus = "Not assigned";
-      updatedFields.examId = null;
-    }
+  /* ---------------- AUTO STAGE: Resume Review ---------------- */
+
+  if (
+    sanitizedResumeReviewed === true &&
+    candidate.resumeReviewed === false &&
+    candidate.applicationStage === "Applied"
+  ) {
+    updatedFields.applicationStage = "Resume Reviewed";
   }
+
+  /* ---------------- MANUAL STAGE UPDATE ---------------- */
+
+  if (applicationStage) {
+    updatedFields.applicationStage = applicationStage;
+  }
+
+  /* ---------------- EXAM STATUS + STAGE LINK ---------------- */
+
+  // ✅ Exam assigned
+  if (sanitizedExamId && sanitizedExamId !== candidate.examId) {
+    updatedFields.examStatus = "Assigned";
+    updatedFields.applicationStage = "Exam Assigned";
+  }
+
+  // ✅ Exam removed
+  if (!sanitizedExamId && candidate.examId) {
+    updatedFields.examStatus = "Not assigned";
+    updatedFields.examId = null;
+  }
+
+  /* ---------------- UPDATE ---------------- */
+
   await candidate.update(updatedFields);
 
   res.status(200).json({
@@ -388,6 +439,96 @@ const reassignExam = async (req, res) => {
   }
 };
 
+const markResumeReviewed = asyncHandler(async (req, res) => {
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
+
+  // ⛔ backward flow protection
+  if (
+    ["Exam Assigned", "Exam Completed"].includes(candidate.applicationStage)
+  ) {
+    return res.status(400).json({
+      message: "Resume review not allowed after exam has been assigned.",
+    });
+  }
+
+  // ✅ SYNC FIX: agar resumeReviewed true hai but stage old hai
+  if (
+    candidate.resumeReviewed === true &&
+    candidate.applicationStage === "Applied"
+  ) {
+    candidate.applicationStage = "Resume Reviewed";
+    await candidate.save();
+
+    return res.json({
+      message: "Stage automatically synced with resume review",
+      candidate,
+    });
+  }
+
+  // ⛔ normal duplicate prevention
+  if (candidate.resumeReviewed === true) {
+    return res.status(400).json({
+      message: "Resume already reviewed",
+    });
+  }
+
+  // ✅ standard success flow
+  candidate.resumeReviewed = true;
+  candidate.applicationStage = "Resume Reviewed";
+
+  await candidate.save();
+
+  res.json({
+    message: "Resume marked as reviewed successfully",
+    candidate,
+  });
+});
+
+const shortlistCandidate = asyncHandler(async (req, res) => {
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
+
+  // ⛔ safety — resume must be reviewed
+  if (!candidate.resumeReviewed) {
+    return res.status(400).json({
+      message: "Resume must be reviewed before shortlisting",
+    });
+  }
+
+  // ⛔ already shortlisted
+  if (candidate.applicationStage === "Shortlisted") {
+    return res.status(400).json({
+      message: "Candidate is already shortlisted",
+    });
+  }
+
+  // ⛔ prevent backward workflow changes
+  if (
+    ["Exam Assigned", "Exam Completed"].includes(candidate.applicationStage)
+  ) {
+    return res.status(400).json({
+      message: "Cannot shortlist candidate after exam has started.",
+    });
+  }
+
+  // ✅ stage automation
+  candidate.applicationStage = "Shortlisted";
+
+  await candidate.save();
+
+  res.json({
+    message: "Candidate shortlisted successfully",
+    candidate,
+  });
+});
+
 module.exports = {
   createCandidate,
   getAllCandidates,
@@ -397,4 +538,6 @@ module.exports = {
   sendExamMailToCandidate,
   startExam,
   reassignExam,
+  markResumeReviewed,
+  shortlistCandidate,
 };

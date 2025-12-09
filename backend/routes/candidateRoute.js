@@ -11,6 +11,8 @@ const {
   sendExamMailToCandidate,
   startExam,
   reassignExam,
+  markResumeReviewed,
+  shortlistCandidate,
 } = require("../controller/candidateController");
 const verifyTokenAndLogin = require("../middleware/verifyExamTokenMiddleware");
 const verifyCandidateToken = require("../middleware/verifyCandidateMiddleware");
@@ -65,6 +67,21 @@ router.post(
   checkPermissionUnified(MENU_CODE, "edit", false),
   reassignExam
 );
+
+router.patch(
+  "/mark-resume-reviewed/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  markResumeReviewed
+);
+
+router.post(
+  "/shortlist/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  shortlistCandidate
+);
+
 // ------------------------------------------------------------------- //
 router.post("/send-exam-mail/:candidateId", sendExamMailToCandidate);
 router.post("/verify-token", verifyTokenAndLogin);
