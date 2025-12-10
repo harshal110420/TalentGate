@@ -104,6 +104,53 @@ export const rejectCandidate = createAsyncThunk(
   }
 );
 
+export const scheduleInterview = createAsyncThunk(
+  "candidate/scheduleInterview",
+  async ({ id, payload }, thunkAPI) => {
+    try {
+      const res = await axiosInstance.patch(
+        `/candidate/schedule-interview/${id}`,
+        payload
+      );
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Interview scheduling failed"
+      );
+    }
+  }
+);
+
+export const markInterviewPassed = createAsyncThunk(
+  "candidate/interviewPassed",
+  async (id, thunkAPI) => {
+    try {
+      const res = await axiosInstance.patch(
+        `/candidate/interview-passed/${id}`
+      );
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Interview pass failed"
+      );
+    }
+  }
+);
+
+export const markSelected = createAsyncThunk(
+  "candidate/markSelected",
+  async (id, thunkAPI) => {
+    try {
+      const res = await axiosInstance.patch(`/candidate/select/${id}`);
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Selection failed"
+      );
+    }
+  }
+);
+
 export const deleteCandidate = createAsyncThunk(
   "candidate/delete",
   async (id, thunkAPI) => {
@@ -144,6 +191,23 @@ export const reassignExam = createAsyncThunk(
     } catch (err) {
       return thunkAPI.rejectWithValue(
         err.response?.data?.message || "Reassigning exam failed"
+      );
+    }
+  }
+);
+
+export const markHired = createAsyncThunk(
+  "candidate/markHired",
+  async ({ id, joiningDate }, thunkAPI) => {
+    try {
+      const res = await axiosInstance.patch(`/candidate/hire/${id}`, {
+        joiningDate,
+      });
+
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Hiring failed"
       );
     }
   }
@@ -292,6 +356,90 @@ const candidateSlice = createSlice({
         }
       })
       .addCase(rejectCandidate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(scheduleInterview.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(scheduleInterview.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+
+        if (idx !== -1) {
+          state.list[idx] = updated;
+        }
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(scheduleInterview.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✅ INTERVIEW PASSED
+      .addCase(markInterviewPassed.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(markInterviewPassed.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) state.list[idx] = updated;
+
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(markInterviewPassed.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✅ SELECTED
+      .addCase(markSelected.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(markSelected.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) state.list[idx] = updated;
+
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(markSelected.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✅ HIRED
+      .addCase(markHired.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(markHired.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) state.list[idx] = updated;
+
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(markHired.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

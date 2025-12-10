@@ -578,6 +578,166 @@ const rejectCandidate = asyncHandler(async (req, res) => {
   });
 });
 
+const scheduleInterview = asyncHandler(async (req, res) => {
+  const {
+    interviewDateTime,
+    interviewMode,
+    interviewLocation,
+    interviewPanel,
+    interviewRemarks,
+  } = req.body;
+
+  if (!interviewDateTime || !interviewMode) {
+    return res.status(400).json({ message: "Interview Date & Mode required" });
+  }
+
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
+
+  // 🔒 Stage protection
+  if (candidate.applicationStage !== "Exam Completed") {
+    return res.status(400).json({
+      message: "Interview can only be scheduled after exam completion",
+    });
+  }
+
+  candidate.applicationStage = "Interview Scheduled";
+  candidate.interviewDateTime = interviewDateTime;
+  candidate.interviewMode = interviewMode;
+  candidate.interviewLocation = interviewLocation;
+  candidate.interviewPanel = interviewPanel;
+  candidate.interviewRemarks = interviewRemarks;
+
+  await candidate.save();
+
+  res.json({
+    success: true,
+    message: "Interview scheduled successfully",
+    candidate,
+  });
+});
+
+const markInterviewPassed = asyncHandler(async (req, res) => {
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
+
+  // ⛔ Workflow protection
+  if (candidate.applicationStage === "Rejected") {
+    return res
+      .status(400)
+      .json({ message: "Rejected candidate cannot be processed" });
+  }
+
+  if (candidate.applicationStage === "Hired") {
+    return res.status(400).json({ message: "Candidate already hired" });
+  }
+
+  // ✅ Only valid if scheduled interview stage
+  if (candidate.applicationStage !== "Interview Scheduled") {
+    return res.status(400).json({
+      message: "Interview must be scheduled before passing",
+    });
+  }
+
+  // ✅ Mark interview passed
+  candidate.applicationStage = "Interview Passed";
+  await candidate.save();
+
+  res.json({
+    message: "Interview marked as passed",
+    candidate,
+  });
+});
+
+const markSelected = asyncHandler(async (req, res) => {
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
+
+  // ⛔ Workflow safety
+  if (candidate.applicationStage === "Rejected") {
+    return res
+      .status(400)
+      .json({ message: "Rejected candidate cannot be selected" });
+  }
+
+  if (candidate.applicationStage === "Hired") {
+    return res.status(400).json({ message: "Candidate already hired" });
+  }
+
+  // ✅ Only from interview pass
+  if (candidate.applicationStage !== "Interview Passed") {
+    return res.status(400).json({
+      message: "Candidate must pass interview before selection",
+    });
+  }
+
+  // ✅ Mark selected
+  candidate.applicationStage = "Selected";
+  await candidate.save();
+
+  res.json({
+    message: "Candidate selected successfully",
+    candidate,
+  });
+});
+
+const markHired = asyncHandler(async (req, res) => {
+  const { joiningDate } = req.body;
+
+  if (!joiningDate) {
+    return res.status(400).json({
+      message: "Joining date is required",
+    });
+  }
+
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({
+      message: "Candidate not found",
+    });
+  }
+
+  // ⛔ VALIDATIONS
+  if (candidate.applicationStage === "Rejected") {
+    return res.status(400).json({
+      message: "Rejected candidate cannot be hired",
+    });
+  }
+
+  if (candidate.applicationStage === "Hired") {
+    return res.status(400).json({
+      message: "Candidate already hired",
+    });
+  }
+
+  if (candidate.applicationStage !== "Selected") {
+    return res.status(400).json({
+      message: "Candidate must be Selected before hiring",
+    });
+  }
+
+  // ✅ MARK AS HIRED
+  candidate.applicationStage = "Hired";
+  candidate.joiningDate = joiningDate;
+
+  await candidate.save();
+
+  res.json({
+    message: "Candidate hired successfully",
+    candidate,
+  });
+});
+
 module.exports = {
   createCandidate,
   getAllCandidates,
@@ -590,4 +750,8 @@ module.exports = {
   markResumeReviewed,
   shortlistCandidate,
   rejectCandidate,
+  scheduleInterview,
+  markInterviewPassed,
+  markSelected,
+  markHired,
 };

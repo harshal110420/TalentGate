@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidate, rejectCandidate } from "../../../features/Candidate/candidateSlice";
+import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidate, rejectCandidate, scheduleInterview, markInterviewPassed, markSelected, markHired } from "../../../features/Candidate/candidateSlice";
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
 import { useNavigate } from "react-router-dom";
@@ -30,6 +30,21 @@ const CandidatePage = () => {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectRemark, setRejectRemark] = useState("");
   const [selectedRejectCandidate, setSelectedRejectCandidate] = useState(null);
+  // Interview scheduling states
+  const [interviewModalOpen, setInterviewModalOpen] = useState(false);
+  const [selectedInterviewCandidate, setSelectedInterviewCandidate] = useState(null);
+  // Selecting states
+  const [showHireModal, setShowHireModal] = useState(false);
+  const [hireCandidateId, setHireCandidateId] = useState(null);
+  const [joiningDate, setJoiningDate] = useState("");
+
+  const [interviewForm, setInterviewForm] = useState({
+    interviewDateTime: "",
+    interviewMode: "",
+    interviewLocation: "",
+    interviewPanel: "",
+    interviewRemarks: "",
+  });
 
   const modules = useSelector((state) => state.modules.list);
   const menu = useSelector((state) => state.menus.list);
@@ -190,6 +205,7 @@ const CandidatePage = () => {
       setReassignLoading(false);
     }
   };
+
   const stageBadgeClasses = (stage) => {
     switch (stage) {
       case "Applied":
@@ -273,6 +289,78 @@ const CandidatePage = () => {
     }
   };
 
+  const handleScheduleInterview = async () => {
+    if (!interviewForm.interviewDateTime || !interviewForm.interviewMode) {
+      toast.error("Interview Date and Mode required");
+      return;
+    }
+
+    try {
+      await dispatch(
+        scheduleInterview({
+          id: selectedInterviewCandidate.id,
+          payload: interviewForm,
+        })
+      ).unwrap();
+
+      toast.success("Interview scheduled");
+
+      setInterviewModalOpen(false);
+      setInterviewForm({
+        interviewDateTime: "",
+        interviewMode: "",
+        interviewLocation: "",
+        interviewPanel: "",
+        interviewRemarks: "",
+      })
+    } catch (err) {
+      toast.error(err);
+    }
+  };
+
+  const handleInterviewPassed = async (id) => {
+    try {
+      await dispatch(markInterviewPassed(id)).unwrap();
+      toast.success("Interview Passed");
+    } catch (err) {
+      toast.error(err || "Failed to mark interview passed");
+    }
+  };
+
+  const handleSelectCandidate = async (id) => {
+    try {
+      await dispatch(markSelected(id)).unwrap();
+      toast.success("Candidate Selected");
+    } catch (err) {
+      toast.error(err || "Failed to mark candidate selected");
+    }
+  };
+
+  const openHireModal = (id) => {
+    setHireCandidateId(id);
+    setJoiningDate("");
+    setShowHireModal(true);
+  };
+
+  const submitHiring = async () => {
+    if (!joiningDate) {
+      toast.error("Joining date required");
+      return;
+    }
+
+    try {
+      await dispatch(
+        markHired({ id: hireCandidateId, joiningDate })
+      ).unwrap();
+
+      toast.success("Candidate Hired Successfully");
+
+      setShowHireModal(false);
+      setHireCandidateId(null);
+    } catch (err) {
+      toast.error(err);
+    }
+  };
 
 
 
@@ -453,6 +541,7 @@ const CandidatePage = () => {
                   {/* <td className="px-4 py-2">{c.email}</td>
                   <td className="px-4 py-2">{c.mobile || "-"}</td> */}
                   <td className="px-4 py-2">{c.department?.name || "-"}</td>
+
                   <td className="px-4 py-2">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
@@ -465,6 +554,7 @@ const CandidatePage = () => {
                       {c.source === "online" ? "Online" : "Offline"}
                     </span>
                   </td>
+
                   <td className="px-4 py-2">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap
@@ -474,6 +564,7 @@ const CandidatePage = () => {
                       {c.applicationStage}
                     </span>
                   </td>
+
                   <td className="px-4 py-2">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.examStatus === "Assigned"
@@ -513,6 +604,7 @@ const CandidatePage = () => {
 
                   {/* <td className="px-4 py-2">{c.exam?.name || "-"}</td> */}
                   <td className="px-4 py-2">{formatToIST(c.lastMailSentAt)}</td>
+
                   <td className="px-4 py-2">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.isActive
@@ -523,6 +615,7 @@ const CandidatePage = () => {
                       {c.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
+
                   <td className="w-[110px] px-4 py-2 text-center sticky right-[150px] bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-10">
                     <div className="flex justify-center items-center gap-2">
                       {/* ===== RESUME REVIEW ===== */}
@@ -577,6 +670,51 @@ const CandidatePage = () => {
                           title="Reassign Exam"
                         >
                           <RefreshCcw className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* ===== SCHEDULE INTERVIEW ===== */}
+                      {c.applicationStage === "Exam Completed" && (
+                        <button
+                          onClick={() => {
+                            setSelectedInterviewCandidate(c);
+                            setInterviewModalOpen(true);
+                          }}
+                          className="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs"
+                          title="Schedule Interview"
+                        >
+                          Schedule Interview
+                        </button>
+                      )}
+
+                      {/* ===== INTERVIEW PASSED ===== */}
+                      {c.applicationStage === "Interview Scheduled" && (
+                        <button
+                          onClick={() => handleInterviewPassed(c.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                          title="Mark Interview Passed"
+                        >
+                          Pass
+                        </button>
+                      )}
+
+                      {/* ===== SELECT CANDIDATE ===== */}
+                      {c.applicationStage === "Interview Passed" && (
+                        <button
+                          onClick={() => handleSelectCandidate(c.id)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs"
+                          title="Mark Selected"
+                        >
+                          Select
+                        </button>
+                      )}
+                      {/* ===== HIRE BUTTON ===== */}
+                      {c.applicationStage === "Selected" && (
+                        <button
+                          onClick={() => openHireModal(c.id)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs"
+                        >
+                          Hire
                         </button>
                       )}
 
@@ -665,7 +803,7 @@ const CandidatePage = () => {
           </button>
         </div>
       )}
-
+      {/* ===== View Modal ===== */}
       {viewModalOpen && selectedViewCandidate && (
         <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
 
@@ -827,6 +965,7 @@ const CandidatePage = () => {
           </div>
         </div>
       )}
+      {/* ===== Reject Modal ===== */}
       {rejectModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
 
@@ -869,8 +1008,135 @@ const CandidatePage = () => {
 
         </div>
       )}
+      {/* ===== Interview Modal ===== */}
+      {interviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md">
 
+            <h3 className="text-lg font-bold mb-4">
+              Schedule Interview — {selectedInterviewCandidate?.name}
+            </h3>
 
+            <div className="space-y-3">
+
+              <input
+                type="datetime-local"
+                value={interviewForm.interviewDateTime}
+                onChange={(e) =>
+                  setInterviewForm({
+                    ...interviewForm,
+                    interviewDateTime: e.target.value,
+                  })
+                }
+                className="w-full input"
+              />
+
+              <select
+                value={interviewForm.interviewMode}
+                onChange={(e) =>
+                  setInterviewForm({
+                    ...interviewForm,
+                    interviewMode: e.target.value,
+                  })
+                }
+                className="w-full input"
+              >
+                <option value="">Select Mode</option>
+                <option value="Online">Online</option>
+                <option value="Offline">Offline</option>
+                <option value="Telephonic">Telephonic</option>
+              </select>
+
+              <input
+                placeholder="Interview location or Meeting link"
+                value={interviewForm.interviewLocation}
+                onChange={(e) =>
+                  setInterviewForm({
+                    ...interviewForm,
+                    interviewLocation: e.target.value,
+                  })
+                }
+                className="w-full input"
+              />
+
+              <input
+                placeholder="Interviewer / Panel"
+                value={interviewForm.interviewPanel}
+                onChange={(e) =>
+                  setInterviewForm({
+                    ...interviewForm,
+                    interviewPanel: e.target.value,
+                  })
+                }
+                className="w-full input"
+              />
+
+              <textarea
+                rows={3}
+                placeholder="Remarks"
+                value={interviewForm.interviewRemarks}
+                onChange={(e) =>
+                  setInterviewForm({
+                    ...interviewForm,
+                    interviewRemarks: e.target.value,
+                  })
+                }
+                className="w-full input"
+              />
+
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setInterviewModalOpen(false)}
+                className="px-4 py-2 text-sm bg-gray-300 hover:bg-gray-400 rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleScheduleInterview}
+                className="px-4 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded"
+              >
+                Schedule
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+      {/* ===== Hire Modal ===== */}
+      {showHireModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-5 w-[320px]">
+            <h3 className="text-lg font-semibold mb-3">Confirm Hiring</h3>
+
+            <input
+              type="date"
+              value={joiningDate}
+              onChange={(e) => setJoiningDate(e.target.value)}
+              className="w-full border px-3 py-2 mb-3 rounded"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowHireModal(false)}
+                className="border px-3 py-1 rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={submitHiring}
+                className="bg-emerald-600 text-white px-3 py-1 rounded"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ===== Confirm Modal ===== */}
       <ConfirmModal
         open={confirmModalOpen}
         title="Send Exam Mail"
@@ -884,7 +1150,7 @@ const CandidatePage = () => {
         }}
         loading={loadingConfirm}
       />
-
+      {/* ===== Reassign Modal ===== */}
       <ConfirmModal
         open={reassignModalOpen}
         title="Reassign Exam"

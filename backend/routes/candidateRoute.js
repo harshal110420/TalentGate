@@ -14,6 +14,10 @@ const {
   markResumeReviewed,
   shortlistCandidate,
   rejectCandidate,
+  scheduleInterview,
+  markInterviewPassed,
+  markSelected,
+  markHired,
 } = require("../controller/candidateController");
 const verifyTokenAndLogin = require("../middleware/verifyExamTokenMiddleware");
 const verifyCandidateToken = require("../middleware/verifyCandidateMiddleware");
@@ -89,6 +93,35 @@ router.patch(
   checkPermissionUnified(MENU_CODE, "edit", false),
   rejectCandidate
 );
+
+router.patch(
+  "/schedule-interview/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  scheduleInterview
+);
+
+router.patch(
+  "/interview-passed/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  markInterviewPassed
+);
+
+router.patch(
+  "/select/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  markSelected
+);
+
+router.patch(
+  "/hire/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  markHired
+);
+
 // ------------------------------------------------------------------- //
 router.post("/send-exam-mail/:candidateId", sendExamMailToCandidate);
 router.post("/verify-token", verifyTokenAndLogin);
