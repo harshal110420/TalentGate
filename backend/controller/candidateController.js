@@ -529,6 +529,55 @@ const shortlistCandidate = asyncHandler(async (req, res) => {
   });
 });
 
+const rejectCandidate = asyncHandler(async (req, res) => {
+  const { remarks } = req.body;
+
+  if (!remarks || remarks.trim() === "") {
+    return res.status(400).json({
+      message: "Rejection remark is required",
+    });
+  }
+
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
+
+  // ⛔ Already hired
+  if (candidate.applicationStage === "Hired") {
+    return res.status(400).json({
+      message: "Cannot reject a hired candidate",
+    });
+  }
+
+  // ⛔ already rejected
+  if (candidate.applicationStage === "Rejected") {
+    return res.status(400).json({
+      message: "Candidate already rejected",
+    });
+  }
+
+  // ✅ Reject candidate
+  candidate.applicationStage = "Rejected";
+  candidate.remarks = remarks;
+
+  // ✅ Cleanup exam flow
+  if (
+    candidate.examStatus === "Assigned" ||
+    candidate.examStatus === "In progress"
+  ) {
+    candidate.examStatus = "Expired";
+  }
+
+  await candidate.save();
+
+  res.json({
+    message: "Candidate rejected successfully",
+    candidate,
+  });
+});
+
 module.exports = {
   createCandidate,
   getAllCandidates,
@@ -540,4 +589,5 @@ module.exports = {
   reassignExam,
   markResumeReviewed,
   shortlistCandidate,
+  rejectCandidate,
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidate } from "../../../features/Candidate/candidateSlice";
+import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidate, rejectCandidate } from "../../../features/Candidate/candidateSlice";
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +27,10 @@ const CandidatePage = () => {
   const [reassignLoading, setReassignLoading] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedViewCandidate, setSelectedViewCandidate] = useState(null);
-  console.log("selected candidate data:", selectedViewCandidate)
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectRemark, setRejectRemark] = useState("");
+  const [selectedRejectCandidate, setSelectedRejectCandidate] = useState(null);
+
   const modules = useSelector((state) => state.modules.list);
   const menu = useSelector((state) => state.menus.list);
   const modulePath = getModulePathByMenu("candidate_management", modules, menu);
@@ -42,7 +45,8 @@ const CandidatePage = () => {
   const [filters, setFilters] = useState({
     search: "",
     departmentId: "",
-    examId: "",
+    // examId: "",
+    applicationStage: "all",
     status: "all",
     examStatus: "all",
     source: "all"
@@ -96,6 +100,11 @@ const CandidatePage = () => {
           ? true
           : c.examStatus === filters.examStatus;
 
+      const matchesApplicationStatus =
+        filters.applicationStage === "all"
+          ? true
+          : c.applicationStage === filters.applicationStage;
+
       const matchesSource =
         filters.source === "all"
           ? true
@@ -107,6 +116,7 @@ const CandidatePage = () => {
         matchesExam &&
         matchesStatus &&
         matchesExamStatus &&
+        matchesApplicationStatus &&
         matchesSource
       );
     });
@@ -237,6 +247,33 @@ const CandidatePage = () => {
     }
   };
 
+  const handleRejectCandidate = async () => {
+    if (!rejectRemark.trim()) {
+      toast.error("Please enter rejection remark");
+      return;
+    }
+
+    try {
+      await dispatch(
+        rejectCandidate({
+          id: selectedRejectCandidate.id,
+          remarks: rejectRemark,
+        })
+      ).unwrap();
+
+      toast.success("Candidate rejected successfully");
+
+      dispatch(fetchAllCandidates());
+    } catch (err) {
+      toast.error(err || "Failed to reject candidate");
+    } finally {
+      setRejectModalOpen(false);
+      setRejectRemark("");
+      setSelectedRejectCandidate(null);
+    }
+  };
+
+
 
 
   return (
@@ -262,74 +299,109 @@ const CandidatePage = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 mb-5 flex flex-wrap gap-2 items-center">
+      <div className="
+  bg-gray-50 dark:bg-gray-900 
+  border border-gray-200 dark:border-gray-700 
+  rounded-xl p-4 mb-5 
+  space-y-3
+">
+
+        {/* --- Row 1 : Search (Full Width) --- */}
         <input
           type="text"
-          placeholder="Search candidates..."
+          placeholder="Search by name, email or mobile..."
           value={filters.search}
           onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm flex-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800"
+          className="
+      w-full
+      border border-gray-300 dark:border-gray-600 
+      rounded-md px-4 py-2 text-sm 
+      focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+      bg-white dark:bg-gray-800
+    "
         />
-        <select
-          value={filters.source}
-          onChange={(e) => setFilters({ ...filters, source: e.target.value })}
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
 
-        >
-          <option value="all">All Sources</option>
-          <option value="offline">Offline</option>
-          <option value="online">Online</option>
-        </select>
 
-        <select
-          value={filters.departmentId}
-          onChange={(e) =>
-            setFilters({ ...filters, departmentId: e.target.value })
-          }
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="">All Departments</option>
-          {departments.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-        {/* <select
-          value={filters.examId}
-          onChange={(e) => setFilters({ ...filters, examId: e.target.value })}
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="">All Exams</option>
-          {exams.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}
-            </option>
-          ))}
-        </select> */}
-        <select
-          value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="all">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-        <select
-          value={filters.examStatus}
-          onChange={(e) =>
-            setFilters({ ...filters, examStatus: e.target.value })
-          }
-          className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800"
-        >
-          <option value="all">All Exam Status</option>
-          <option value="Assigned">Assigned</option>
-          <option value="In progress">In progress</option>
-          <option value="Completed">Completed</option>
-          <option value="Expired">Expired</option>
-        </select>
+        {/* --- Row 2 : Dropdown Grid --- */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+
+          {/* Source */}
+          <select
+            value={filters.source}
+            onChange={(e) => setFilters({ ...filters, source: e.target.value })}
+            className="filter-select"
+          >
+            <option value="all">All Sources</option>
+            <option value="offline">Offline</option>
+            <option value="online">Online</option>
+          </select>
+
+          {/* Department */}
+          <select
+            value={filters.departmentId}
+            onChange={(e) =>
+              setFilters({ ...filters, departmentId: e.target.value })
+            }
+            className="filter-select"
+          >
+            <option value="">All Departments</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Application Stage */}
+          <select
+            value={filters.applicationStage}
+            onChange={(e) =>
+              setFilters({ ...filters, applicationStage: e.target.value })
+            }
+            className="filter-select"
+          >
+            <option value="all">All Application Stages</option>
+            <option value="Applied">Applied</option>
+            <option value="Resume Reviewed">Resume Reviewed</option>
+            <option value="Shortlisted">Shortlisted</option>
+            <option value="Exam Assigned">Exam Assigned</option>
+            <option value="Exam Completed">Exam Completed</option>
+            <option value="Interview Scheduled">Interview Scheduled</option>
+            <option value="Interview Passed">Interview Passed</option>
+            <option value="Selected">Selected</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Hired">Hired</option>
+          </select>
+
+          {/* Candidate Status */}
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            className="filter-select"
+          >
+            <option value="all">All Status</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+
+          {/* Exam Status */}
+          <select
+            value={filters.examStatus}
+            onChange={(e) =>
+              setFilters({ ...filters, examStatus: e.target.value })
+            }
+            className="filter-select"
+          >
+            <option value="all">All Exam Status</option>
+            <option value="Assigned">Assigned</option>
+            <option value="In progress">In progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Expired">Expired</option>
+          </select>
+
+        </div>
       </div>
+
 
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
@@ -347,11 +419,11 @@ const CandidatePage = () => {
               {/* <th className="px-4 py-3 text-left">Exam</th> */}
               <th className="px-4 py-3 text-left">Last Mail</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-center sticky right-[90px] bg-gray-100 dark:bg-gray-800 border-l">
+              <th className="w-[110px] px-4 py-3 text-center sticky right-[150px] bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-20">
                 Quick Actions
               </th>
 
-              <th className="px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 border-l">
+              <th className="w-[110px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-30">
                 Actions
               </th>
 
@@ -383,7 +455,7 @@ const CandidatePage = () => {
                   <td className="px-4 py-2">{c.department?.name || "-"}</td>
                   <td className="px-4 py-2">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                         ${c.source === "online"
                           ? "bg-green-100 text-green-700"
                           : "bg-blue-100 text-blue-700"
@@ -404,7 +476,7 @@ const CandidatePage = () => {
                   </td>
                   <td className="px-4 py-2">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${c.examStatus === "Assigned"
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.examStatus === "Assigned"
                         ? "bg-blue-100 text-blue-700"
                         : c.examStatus === "In progress"
                           ? "bg-yellow-100 text-yellow-800"
@@ -451,7 +523,7 @@ const CandidatePage = () => {
                       {c.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-center sticky right-[80px] bg-gray-50 dark:bg-gray-800 border-l">
+                  <td className="w-[110px] px-4 py-2 text-center sticky right-[150px] bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-10">
                     <div className="flex justify-center items-center gap-2">
                       {/* ===== RESUME REVIEW ===== */}
                       {c.applicationStage === "Applied" && c.resumeReviewed !== true && (
@@ -463,7 +535,6 @@ const CandidatePage = () => {
                           Review
                         </button>
                       )}
-
 
                       {/* ===== SHORTLIST ===== */}
                       {c.applicationStage === "Resume Reviewed" && (
@@ -512,7 +583,7 @@ const CandidatePage = () => {
                     </div>
                   </td>
 
-                  <td className="px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 border-l">
+                  <td className="w-[110px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-20">
                     <div className="flex justify-center items-center gap-2">
 
                       {/* VIEW */}
@@ -539,6 +610,18 @@ const CandidatePage = () => {
                           <Pencil className="w-4 h-4" />
                         </button>
                       </ButtonWrapper>
+                      {c.applicationStage !== "Hired" &&
+                        c.applicationStage !== "Rejected" && (
+                          <button
+                            onClick={() => {
+                              setSelectedRejectCandidate(c);
+                              setRejectModalOpen(true);
+                            }}
+                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1"
+                          >
+                            Reject
+                          </button>
+                        )}
 
                     </div>
                   </td>
@@ -742,6 +825,48 @@ const CandidatePage = () => {
             </div>
 
           </div>
+        </div>
+      )}
+      {rejectModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+
+          <div className="bg-white rounded-lg p-6 w-[400px]">
+            <h3 className="text-lg font-semibold mb-4">Reject Candidate</h3>
+
+            <p className="text-sm text-gray-600 mb-2">
+              Please enter rejection reason for:
+              <b> {selectedRejectCandidate?.name}</b>
+            </p>
+
+            <textarea
+              rows={4}
+              value={rejectRemark}
+              onChange={(e) => setRejectRemark(e.target.value)}
+              className="w-full border rounded p-2 text-sm mb-3"
+              placeholder="Enter rejection reason"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setRejectRemark("");
+                  setSelectedRejectCandidate(null);
+                }}
+                className="px-3 py-1 border rounded text-sm"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleRejectCandidate}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+
         </div>
       )}
 

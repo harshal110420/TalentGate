@@ -88,6 +88,22 @@ export const shortlistCandidate = createAsyncThunk(
   }
 );
 
+export const rejectCandidate = createAsyncThunk(
+  "candidate/rejectCandidate",
+  async ({ id, remarks }, thunkAPI) => {
+    try {
+      const res = await axiosInstance.patch(`/candidate/reject/${id}`, {
+        remarks,
+      });
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Candidate rejection failed"
+      );
+    }
+  }
+);
+
 export const deleteCandidate = createAsyncThunk(
   "candidate/delete",
   async (id, thunkAPI) => {
@@ -252,6 +268,30 @@ const candidateSlice = createSlice({
         }
       })
       .addCase(shortlistCandidate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Reject
+      .addCase(rejectCandidate.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(rejectCandidate.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+
+        // update list
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) {
+          state.list[idx] = updated;
+        }
+
+        // update selected if same
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(rejectCandidate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

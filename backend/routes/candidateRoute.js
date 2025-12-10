@@ -13,6 +13,7 @@ const {
   reassignExam,
   markResumeReviewed,
   shortlistCandidate,
+  rejectCandidate,
 } = require("../controller/candidateController");
 const verifyTokenAndLogin = require("../middleware/verifyExamTokenMiddleware");
 const verifyCandidateToken = require("../middleware/verifyCandidateMiddleware");
@@ -82,6 +83,12 @@ router.post(
   shortlistCandidate
 );
 
+router.patch(
+  "/reject/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  rejectCandidate
+);
 // ------------------------------------------------------------------- //
 router.post("/send-exam-mail/:candidateId", sendExamMailToCandidate);
 router.post("/verify-token", verifyTokenAndLogin);
