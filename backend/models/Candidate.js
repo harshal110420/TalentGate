@@ -68,11 +68,12 @@ module.exports = () => {
         type: DataTypes.ENUM(
           "Applied",
           "Resume Reviewed",
-          "Shortlisted",
+          "Shortlisted for Exam",
           "Exam Assigned",
           "Exam Completed",
+          "Shortlisted for Interview",
           "Interview Scheduled",
-          "Interview Passed",
+          "Interview Completed",
           "Selected",
           "Rejected",
           "Hired"

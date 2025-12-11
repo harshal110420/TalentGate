@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidate, rejectCandidate, scheduleInterview, markInterviewPassed, markSelected, markHired } from "../../../features/Candidate/candidateSlice";
+import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidateForExam, rejectCandidate, scheduleInterview, markInterviewCompleted, markSelected, markHired, shortlistCandidateForInterview } from "../../../features/Candidate/candidateSlice";
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
 import { useNavigate } from "react-router-dom";
@@ -214,7 +214,7 @@ const CandidatePage = () => {
       case "Resume Reviewed":
         return "bg-blue-100 text-blue-700";
 
-      case "Shortlisted":
+      case "Shortlisted for Exam":
         return "bg-indigo-100 text-indigo-700";
 
       case "Exam Assigned":
@@ -223,10 +223,13 @@ const CandidatePage = () => {
       case "Exam Completed":
         return "bg-purple-100 text-purple-700";
 
+      case "Shortlisted for Interview":
+        return "bg-indigo-100 text-indigo-700";
+
       case "Interview Scheduled":
         return "bg-orange-100 text-orange-700";
 
-      case "Interview Passed":
+      case "Interview Completed":
         return "bg-teal-100 text-teal-700";
 
       case "Selected":
@@ -253,13 +256,23 @@ const CandidatePage = () => {
     }
   };
 
-  const handleShortlist = async (id) => {
+  const handleShortlistForExam = async (id) => {
     try {
-      await dispatch(shortlistCandidate(id)).unwrap();
-      toast.success("Candidate shortlisted!");
+      await dispatch(shortlistCandidateForExam(id)).unwrap();
+      toast.success("Candidate shortlisted for exam!");
       dispatch(fetchAllCandidates());
     } catch (err) {
       toast.error(err || "Shortlisting failed");
+    }
+  };
+
+  const handleShortlistForInterview = async (id) => {
+    try {
+      await dispatch(shortlistCandidateForInterview(id)).unwrap();
+      toast.success("Candidate shortlisted for interview!");
+      dispatch(fetchAllCandidates());
+    } catch (err) {
+      toast.error(err || "Shortlisting failed for interview");
     }
   };
 
@@ -318,12 +331,12 @@ const CandidatePage = () => {
     }
   };
 
-  const handleInterviewPassed = async (id) => {
+  const handleInterviewCompleted = async (id) => {
     try {
-      await dispatch(markInterviewPassed(id)).unwrap();
-      toast.success("Interview Passed");
+      await dispatch(markInterviewCompleted(id)).unwrap();
+      toast.success("Interview completed");
     } catch (err) {
-      toast.error(err || "Failed to mark interview passed");
+      toast.error(err || "Failed to mark interview completed");
     }
   };
 
@@ -451,11 +464,12 @@ const CandidatePage = () => {
             <option value="all">All Application Stages</option>
             <option value="Applied">Applied</option>
             <option value="Resume Reviewed">Resume Reviewed</option>
-            <option value="Shortlisted">Shortlisted</option>
+            <option value="Shortlisted for Exam">Shortlisted for Exam</option>
             <option value="Exam Assigned">Exam Assigned</option>
             <option value="Exam Completed">Exam Completed</option>
+            <option value="Shortlisted for Interview">Shortlisted for Interview</option>
             <option value="Interview Scheduled">Interview Scheduled</option>
-            <option value="Interview Passed">Interview Passed</option>
+            <option value="Interview Completed">Interview Completed</option>
             <option value="Selected">Selected</option>
             <option value="Rejected">Rejected</option>
             <option value="Hired">Hired</option>
@@ -507,7 +521,7 @@ const CandidatePage = () => {
               {/* <th className="px-4 py-3 text-left">Exam</th> */}
               <th className="px-4 py-3 text-left">Last Mail</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="w-[110px] px-4 py-3 text-center sticky right-[150px] bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-20">
+              <th className="w-[160px] px-4 py-3 text-center sticky right-[150px] bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-20">
                 Quick Actions
               </th>
 
@@ -616,7 +630,7 @@ const CandidatePage = () => {
                     </span>
                   </td>
 
-                  <td className="w-[110px] px-4 py-2 text-center sticky right-[150px] bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-10">
+                  <td className="w-[160px] px-4 py-2 text-center sticky right-[150px] bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-10">
                     <div className="flex justify-center items-center gap-2">
                       {/* ===== RESUME REVIEW ===== */}
                       {c.applicationStage === "Applied" && c.resumeReviewed !== true && (
@@ -625,18 +639,18 @@ const CandidatePage = () => {
                           className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
                           title="Review Resume"
                         >
-                          Review
+                          Review Resume
                         </button>
                       )}
 
-                      {/* ===== SHORTLIST ===== */}
+                      {/* ===== SHORTLIST FOR EXAM ===== */}
                       {c.applicationStage === "Resume Reviewed" && (
                         <button
-                          onClick={() => handleShortlist(c.id)}
+                          onClick={() => handleShortlistForExam(c.id)}
                           className="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded text-xs"
                           title="Shortlist Candidate"
                         >
-                          Shortlist
+                          Shortlist for Exam
                         </button>
                       )}
 
@@ -673,8 +687,19 @@ const CandidatePage = () => {
                         </button>
                       )}
 
-                      {/* ===== SCHEDULE INTERVIEW ===== */}
+                      {/* ===== SHORTLIST FOR INTERVIEW ===== */}
                       {c.applicationStage === "Exam Completed" && (
+                        <button
+                          onClick={() => handleShortlistForInterview(c.id)}
+                          className="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs"
+                          title="Shortlist Candidate for Interview"
+                        >
+                          Shortlist for Interview
+                        </button>
+                      )}
+
+                      {/* ===== SCHEDULE INTERVIEW ===== */}
+                      {c.applicationStage === "Shortlisted for Interview" && (
                         <button
                           onClick={() => {
                             setSelectedInterviewCandidate(c);
@@ -687,25 +712,25 @@ const CandidatePage = () => {
                         </button>
                       )}
 
-                      {/* ===== INTERVIEW PASSED ===== */}
+                      {/* ===== INTERVIEW Completed ===== */}
                       {c.applicationStage === "Interview Scheduled" && (
                         <button
-                          onClick={() => handleInterviewPassed(c.id)}
+                          onClick={() => handleInterviewCompleted(c.id)}
                           className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-                          title="Mark Interview Passed"
+                          title="Mark Interview Completed"
                         >
-                          Pass
+                          Mark as Completed
                         </button>
                       )}
 
                       {/* ===== SELECT CANDIDATE ===== */}
-                      {c.applicationStage === "Interview Passed" && (
+                      {c.applicationStage === "Interview Completed" && (
                         <button
                           onClick={() => handleSelectCandidate(c.id)}
                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs"
                           title="Mark Selected"
                         >
-                          Select
+                          Mark as Selected
                         </button>
                       )}
                       {/* ===== HIRE BUTTON ===== */}
@@ -805,24 +830,25 @@ const CandidatePage = () => {
       )}
       {/* ===== View Modal ===== */}
       {viewModalOpen && selectedViewCandidate && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center">
 
           <div className="
       bg-white dark:bg-gray-900
-      w-[90%] max-w-6xl 
-      h-[90vh]
+      w-[92%] max-w-6xl 
+      h-[88vh]
       rounded-2xl shadow-2xl
       flex flex-col
       overflow-hidden
+      border border-gray-200 dark:border-gray-700
     ">
 
             {/* ===== HEADER ===== */}
-            <div className="px-6 py-4 flex justify-between items-center border-b dark:border-gray-700">
+            <div className="px-6 py-4 flex justify-between items-center border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
               <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white leading-tight">
                   {selectedViewCandidate.name}
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 mt-0.5">
                   {selectedViewCandidate.email}
                 </p>
               </div>
@@ -830,14 +856,14 @@ const CandidatePage = () => {
               <div className="flex gap-4 items-center">
                 <span className="
             text-xs px-3 py-1 rounded-full
-            bg-blue-100 text-blue-700
+            bg-blue-100 text-blue-700 font-medium
           ">
                   {selectedViewCandidate.applicationStage}
                 </span>
 
                 <button
                   onClick={() => setViewModalOpen(false)}
-                  className="text-xl hover:text-red-500"
+                  className="text-2xl hover:text-red-500 transition"
                 >
                   ✕
                 </button>
@@ -848,41 +874,48 @@ const CandidatePage = () => {
             <div className="flex flex-1 overflow-hidden">
 
               {/* ===== LEFT PROFILE CARD ===== */}
-              <aside className="w-[280px] border-r dark:border-gray-700 p-5 space-y-4 bg-gray-50 dark:bg-gray-800">
+              <aside className="w-[300px] p-6 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-y-auto">
 
+                {/* Avatar + Basic Info */}
                 <div className="text-center">
-                  <div className="w-24 h-24 bg-blue-100 rounded-full mx-auto flex items-center justify-center text-3xl font-bold text-blue-700">
+                  <div className="
+              w-24 h-24 mx-auto 
+              bg-gradient-to-br from-blue-200 to-blue-100
+              dark:from-blue-700 dark:to-blue-600
+              text-white text-4xl rounded-full 
+              flex items-center justify-center font-bold shadow
+            ">
                     {selectedViewCandidate.name[0]}
                   </div>
 
-                  <h4 className="mt-3 font-semibold">
+                  <h4 className="mt-3 text-xl font-semibold text-gray-800 dark:text-white">
                     {selectedViewCandidate.name}
                   </h4>
 
-                  <p className="text-xs text-gray-500">
-                    Rating : {selectedViewCandidate.hrRating || "N/A"}⭐
+                  <p className="text-xs text-gray-500 mt-1">
+                    HR Rating: {selectedViewCandidate.hrRating || "N/A"} ⭐
                   </p>
                 </div>
 
-                <hr />
+                <hr className="my-5 border-gray-300 dark:border-gray-700" />
 
-                <div className="text-sm space-y-2">
+                {/* Basic Details */}
+                <div className="text-sm space-y-3 text-gray-700 dark:text-gray-300">
                   <p><b>Mobile:</b> {selectedViewCandidate.mobile || "N/A"}</p>
                   <p><b>Experience:</b> {selectedViewCandidate.experience || "N/A"}</p>
-                  <p><b>Source:</b> {selectedViewCandidate.source}</p>
-
-                  <p>
-                    <b>Recruiter:</b> {selectedViewCandidate.assignedRecruiterId || "N/A"}
-                  </p>
+                  <p><b>Source:</b> {selectedViewCandidate.source || "N/A"}</p>
+                  <p><b>Recruiter:</b> {selectedViewCandidate.assignedRecruiterId || "N/A"}</p>
                 </div>
 
+                {/* Resume Button */}
                 {selectedViewCandidate.resumeUrl && (
                   <a
                     href={selectedViewCandidate.resumeUrl}
                     target="_blank"
                     className="
-                block text-center py-2 rounded-md
-                bg-blue-600 hover:bg-blue-700 text-white text-sm
+                block text-center mt-6 py-2 rounded-md
+                bg-blue-600 hover:bg-blue-700 
+                text-white text-sm font-medium shadow
               "
                   >
                     📄 View Resume
@@ -891,45 +924,24 @@ const CandidatePage = () => {
 
               </aside>
 
-
               {/* ===== RIGHT DETAILS AREA ===== */}
-              <section className="
-          flex-1 p-6
-          overflow-y-auto
-          text-sm
-          space-y-4
-        ">
+              <section className="flex-1 p-6 overflow-y-auto text-sm space-y-6">
 
-                {/* ----- Job Details ----- */}
-                <div>
-                  <h5 className="font-bold mb-1">Job Details</h5>
-
-                  <div className="grid grid-cols-3 gap-4 text-gray-600">
-                    <p>
-                      <b>Job Code:</b>
-                      {selectedViewCandidate?.jobCode || NA}
-                    </p>
-                    <p>
-                      <b>Job Title:</b>
-                      {selectedViewCandidate?.job?.title || NA}
-                    </p>
-                    <p>
-                      <b>Job Designation:</b>
-                      {selectedViewCandidate?.job?.designation || NA}
-                    </p>
-                    <p>
-                      <b>Department:</b>
-                      {selectedViewCandidate?.department?.name || NA}
-                    </p>
+                {/* Job Details */}
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Job Details</h5>
+                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
+                    <p><b>Job Code:</b> {selectedViewCandidate?.jobCode || "N/A"}</p>
+                    <p><b>Job Title:</b> {selectedViewCandidate?.job?.title || "N/A"}</p>
+                    <p><b>Designation:</b> {selectedViewCandidate?.job?.designation || "N/A"}</p>
+                    <p><b>Department:</b> {selectedViewCandidate?.department?.name || "N/A"}</p>
                   </div>
                 </div>
 
-
-                {/* ----- Exam Status ----- */}
-                <div>
-                  <h5 className="font-bold mb-1">Exam Status</h5>
-
-                  <div className="grid grid-cols-3 gap-3 text-gray-600">
+                {/* Exam Status */}
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Exam Status</h5>
+                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
                     <p><b>Exam:</b> {selectedViewCandidate.examId || "Not Assigned"}</p>
                     <p><b>Status:</b> {selectedViewCandidate.examStatus}</p>
                     <p>
@@ -941,19 +953,19 @@ const CandidatePage = () => {
                   </div>
                 </div>
 
-                {/* ----- HR Notes ----- */}
-                <div>
-                  <h5 className="font-bold mb-1">HR Remarks</h5>
-
+                {/* HR Notes */}
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">HR Remarks</h5>
                   <textarea
                     value={selectedViewCandidate.remarks || ""}
                     disabled
                     className="
-                w-full min-h-[120px]
+                w-full min-h-[140px]
                 px-3 py-2
                 border rounded-md
-                bg-gray-50 dark:bg-gray-800
-                resize-none
+                bg-white dark:bg-gray-900
+                text-gray-600 dark:text-gray-300
+                resize-none leading-relaxed shadow-sm
               "
                   />
                 </div>
@@ -963,8 +975,10 @@ const CandidatePage = () => {
             </div>
 
           </div>
+
         </div>
       )}
+
       {/* ===== Reject Modal ===== */}
       {rejectModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">

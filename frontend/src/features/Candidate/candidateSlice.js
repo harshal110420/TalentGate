@@ -74,11 +74,29 @@ export const markResumeReviewed = createAsyncThunk(
   }
 );
 
-export const shortlistCandidate = createAsyncThunk(
-  "candidate/shortlist",
+export const shortlistCandidateForExam = createAsyncThunk(
+  "candidate/shortlist-for-exam",
   async (id, thunkAPI) => {
     try {
-      const res = await axiosInstance.post(`/candidate/shortlist/${id}`);
+      const res = await axiosInstance.post(
+        `/candidate/shortlist-candidate-for-exam/${id}`
+      );
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Shortlisting failed"
+      );
+    }
+  }
+);
+
+export const shortlistCandidateForInterview = createAsyncThunk(
+  "candidate/shortlist-for-interview",
+  async (id, thunkAPI) => {
+    try {
+      const res = await axiosInstance.post(
+        `/candidate/shortlist-candidate-for-interview/${id}`
+      );
       return res.data.candidate;
     } catch (err) {
       return thunkAPI.rejectWithValue(
@@ -121,12 +139,12 @@ export const scheduleInterview = createAsyncThunk(
   }
 );
 
-export const markInterviewPassed = createAsyncThunk(
-  "candidate/interviewPassed",
+export const markInterviewCompleted = createAsyncThunk(
+  "candidate/interviewCompleted",
   async (id, thunkAPI) => {
     try {
       const res = await axiosInstance.patch(
-        `/candidate/interview-passed/${id}`
+        `/candidate/interview-completed/${id}`
       );
       return res.data.candidate;
     } catch (err) {
@@ -314,10 +332,10 @@ const candidateSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(shortlistCandidate.pending, (state) => {
+      .addCase(shortlistCandidateForExam.pending, (state) => {
         state.loading = true;
       })
-      .addCase(shortlistCandidate.fulfilled, (state, action) => {
+      .addCase(shortlistCandidateForExam.fulfilled, (state, action) => {
         state.loading = false;
 
         const updated = action.payload;
@@ -331,7 +349,28 @@ const candidateSlice = createSlice({
           state.selected = updated;
         }
       })
-      .addCase(shortlistCandidate.rejected, (state, action) => {
+      .addCase(shortlistCandidateForExam.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(shortlistCandidateForInterview.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(shortlistCandidateForInterview.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+
+        if (idx !== -1) {
+          state.list[idx] = updated;
+        }
+
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(shortlistCandidateForInterview.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -382,10 +421,10 @@ const candidateSlice = createSlice({
       })
 
       // ✅ INTERVIEW PASSED
-      .addCase(markInterviewPassed.pending, (state) => {
+      .addCase(markInterviewCompleted.pending, (state) => {
         state.loading = true;
       })
-      .addCase(markInterviewPassed.fulfilled, (state, action) => {
+      .addCase(markInterviewCompleted.fulfilled, (state, action) => {
         state.loading = false;
 
         const updated = action.payload;
@@ -397,7 +436,7 @@ const candidateSlice = createSlice({
           state.selected = updated;
         }
       })
-      .addCase(markInterviewPassed.rejected, (state, action) => {
+      .addCase(markInterviewCompleted.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

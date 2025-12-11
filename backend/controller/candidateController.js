@@ -175,7 +175,7 @@ const updateCandidate = asyncHandler(async (req, res) => {
   /* ---------------- SHORTLIST VALIDATION ---------------- */
 
   if (
-    applicationStage === "Shortlisted" &&
+    applicationStage === "Shortlisted for Exam" &&
     candidate.resumeReviewed !== true &&
     sanitizedResumeReviewed !== true
   ) {
@@ -190,7 +190,7 @@ const updateCandidate = asyncHandler(async (req, res) => {
   if (
     sanitizedExamId && // exam assign ho raha hai
     sanitizedExamId !== candidate.examId && // exam change ho raha hai
-    effectiveStage !== "Shortlisted"
+    effectiveStage !== "Shortlisted for Exam"
   ) {
     return res.status(400).json({
       message: "Exam can be assigned only to SHORTLISTED candidates.",
@@ -488,7 +488,7 @@ const markResumeReviewed = asyncHandler(async (req, res) => {
   });
 });
 
-const shortlistCandidate = asyncHandler(async (req, res) => {
+const shortlistCandidateForExam = asyncHandler(async (req, res) => {
   const candidate = await Candidate.findByPk(req.params.id);
 
   if (!candidate) {
@@ -503,9 +503,9 @@ const shortlistCandidate = asyncHandler(async (req, res) => {
   }
 
   // ⛔ already shortlisted
-  if (candidate.applicationStage === "Shortlisted") {
+  if (candidate.applicationStage === "Shortlisted for Exam") {
     return res.status(400).json({
-      message: "Candidate is already shortlisted",
+      message: "Candidate is already Shortlisted for Exam",
     });
   }
 
@@ -519,7 +519,7 @@ const shortlistCandidate = asyncHandler(async (req, res) => {
   }
 
   // ✅ stage automation
-  candidate.applicationStage = "Shortlisted";
+  candidate.applicationStage = "Shortlisted for Exam";
 
   await candidate.save();
 
@@ -578,6 +578,37 @@ const rejectCandidate = asyncHandler(async (req, res) => {
   });
 });
 
+const shortlistCandidateForInterview = asyncHandler(async (req, res) => {
+  const candidate = await Candidate.findByPk(req.params.id);
+
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
+  // ⛔ safety — exam must be completed
+  if (candidate.applicationStage !== "Exam Completed") {
+    return res.status(400).json({
+      message: "Candidate must complete exam before shortlisting for interview",
+    });
+  }
+
+  // ⛔ already shortlisted for interview
+  if (candidate.applicationStage === "Interview Scheduled") {
+    return res.status(400).json({
+      message: "Candidate is already Shortlisted for Interview",
+    });
+  }
+
+  // ✅ stage automation
+  candidate.applicationStage = "Shortlisted for Interview";
+
+  await candidate.save();
+
+  res.json({
+    message: "Candidate shortlisted for interview successfully",
+    candidate,
+  });
+});
+
 const scheduleInterview = asyncHandler(async (req, res) => {
   const {
     interviewDateTime,
@@ -598,9 +629,10 @@ const scheduleInterview = asyncHandler(async (req, res) => {
   }
 
   // 🔒 Stage protection
-  if (candidate.applicationStage !== "Exam Completed") {
+  if (candidate.applicationStage !== "Shortlisted for Interview") {
     return res.status(400).json({
-      message: "Interview can only be scheduled after exam completion",
+      message:
+        "Interview can be scheduled only after candidate is shortlisted for interview",
     });
   }
 
@@ -620,7 +652,7 @@ const scheduleInterview = asyncHandler(async (req, res) => {
   });
 });
 
-const markInterviewPassed = asyncHandler(async (req, res) => {
+const markInterviewCompleted = asyncHandler(async (req, res) => {
   const candidate = await Candidate.findByPk(req.params.id);
 
   if (!candidate) {
@@ -646,11 +678,11 @@ const markInterviewPassed = asyncHandler(async (req, res) => {
   }
 
   // ✅ Mark interview passed
-  candidate.applicationStage = "Interview Passed";
+  candidate.applicationStage = "Interview Completed";
   await candidate.save();
 
   res.json({
-    message: "Interview marked as passed",
+    message: "Interview marked as completed",
     candidate,
   });
 });
@@ -674,9 +706,9 @@ const markSelected = asyncHandler(async (req, res) => {
   }
 
   // ✅ Only from interview pass
-  if (candidate.applicationStage !== "Interview Passed") {
+  if (candidate.applicationStage !== "Interview Completed") {
     return res.status(400).json({
-      message: "Candidate must pass interview before selection",
+      message: "Candidate must complete interview before selection",
     });
   }
 
@@ -748,10 +780,11 @@ module.exports = {
   startExam,
   reassignExam,
   markResumeReviewed,
-  shortlistCandidate,
+  shortlistCandidateForExam,
+  shortlistCandidateForInterview,
   rejectCandidate,
   scheduleInterview,
-  markInterviewPassed,
+  markInterviewCompleted,
   markSelected,
   markHired,
 };

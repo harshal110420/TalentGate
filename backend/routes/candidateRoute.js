@@ -12,10 +12,11 @@ const {
   startExam,
   reassignExam,
   markResumeReviewed,
-  shortlistCandidate,
+  shortlistCandidateForExam,
+  shortlistCandidateForInterview,
   rejectCandidate,
   scheduleInterview,
-  markInterviewPassed,
+  markInterviewCompleted,
   markSelected,
   markHired,
 } = require("../controller/candidateController");
@@ -81,10 +82,17 @@ router.patch(
 );
 
 router.post(
-  "/shortlist/:id",
+  "/shortlist-candidate-for-exam/:id",
   authMiddleware,
   checkPermissionUnified(MENU_CODE, "edit", false),
-  shortlistCandidate
+  shortlistCandidateForExam
+);
+
+router.post(
+  "/shortlist-candidate-for-interview/:id",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  shortlistCandidateForInterview
 );
 
 router.patch(
@@ -102,10 +110,10 @@ router.patch(
 );
 
 router.patch(
-  "/interview-passed/:id",
+  "/interview-completed/:id",
   authMiddleware,
   checkPermissionUnified(MENU_CODE, "edit", false),
-  markInterviewPassed
+  markInterviewCompleted
 );
 
 router.patch(
