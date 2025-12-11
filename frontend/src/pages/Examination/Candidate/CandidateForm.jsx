@@ -83,7 +83,7 @@ const initialForm = {
   jobCode: "",
   jobTitle: "",
   jobDesignation: "",
-  applicationStage: "Applied",
+  // applicationStage: "Applied",
   assignedRecruiterId: "",
   remarks: "",
   // resumeReviewed: false,
@@ -148,7 +148,7 @@ const CandidateForm = () => {
         jobCode: selected.jobCode || "",
         jobTitle: selected.jobTitle || "",
         jobDesignation: selected.jobDesignation || "",
-        applicationStage: selected.applicationStage || "Applied",
+        // applicationStage: selected.applicationStage || "Applied",
         assignedRecruiterId: selected.assignedRecruiterId || "",
         remarks: selected.remarks || "",
         // resumeReviewed: selected.resumeReviewed || false,
@@ -469,7 +469,7 @@ const CandidateForm = () => {
             <section className="space-y-5">
               {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> */}
 
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
                   Application Stage
                 </label>
@@ -483,7 +483,7 @@ const CandidateForm = () => {
                     <option key={stage} value={stage}>{stage}</option>
                   ))}
                 </select>
-              </div>
+              </div> */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
                   Search Job (Code / Title / Designation)

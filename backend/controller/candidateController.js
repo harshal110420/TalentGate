@@ -60,6 +60,7 @@ const createCandidate = asyncHandler(async (req, res) => {
     resumeReviewed,
     hrRating: hrRating ? Number(hrRating) : null,
     examStatus: finalExamId ? "Assigned" : "Not assigned",
+    examAssignedAt: finalExamId ? new Date() : null, // ✅ yahan add karo
     created_by: req.user?.id || null,
   };
   try {
@@ -240,6 +241,7 @@ const updateCandidate = asyncHandler(async (req, res) => {
   if (sanitizedExamId && sanitizedExamId !== candidate.examId) {
     updatedFields.examStatus = "Assigned";
     updatedFields.applicationStage = "Exam Assigned";
+    updatedFields.examAssignedAt = new Date();
   }
 
   // ✅ Exam removed
@@ -313,8 +315,6 @@ const sendExamMailToCandidate = async (req, res) => {
       process.env.JWT_SECRET_EXAM,
       { expiresIn: "1h" }
     );
-    console.log("Generated Token:", token);
-
     const baseUrl = process.env.FRONTEND_URL || "https://talentgate.in/exam";
     const examLink = `${baseUrl}/exam-login?token=${token}`;
 
@@ -428,7 +428,7 @@ const reassignExam = async (req, res) => {
     candidate.examId = examId;
     // Reset exam status
     candidate.examStatus = "Assigned";
-
+    candidate.examReassignedAt = new Date();
     await candidate.save();
 
     return res.json({ message: "Exam reassigned successfully", candidate });
@@ -479,7 +479,7 @@ const markResumeReviewed = asyncHandler(async (req, res) => {
   // ✅ standard success flow
   candidate.resumeReviewed = true;
   candidate.applicationStage = "Resume Reviewed";
-
+  candidate.resumeReviewedAt = new Date();
   await candidate.save();
 
   res.json({
@@ -520,7 +520,7 @@ const shortlistCandidateForExam = asyncHandler(async (req, res) => {
 
   // ✅ stage automation
   candidate.applicationStage = "Shortlisted for Exam";
-
+  candidate.shortlistedForExamAt = new Date();
   await candidate.save();
 
   res.json({
@@ -560,6 +560,7 @@ const rejectCandidate = asyncHandler(async (req, res) => {
 
   // ✅ Reject candidate
   candidate.applicationStage = "Rejected";
+  candidate.rejectedAt = new Date();
   candidate.remarks = remarks;
 
   // ✅ Cleanup exam flow
@@ -600,7 +601,7 @@ const shortlistCandidateForInterview = asyncHandler(async (req, res) => {
 
   // ✅ stage automation
   candidate.applicationStage = "Shortlisted for Interview";
-
+  candidate.shortlistedForInterviewAt = new Date();
   await candidate.save();
 
   res.json({
@@ -642,7 +643,7 @@ const scheduleInterview = asyncHandler(async (req, res) => {
   candidate.interviewLocation = interviewLocation;
   candidate.interviewPanel = interviewPanel;
   candidate.interviewRemarks = interviewRemarks;
-
+  candidate.interviewScheduledAt = new Date();
   await candidate.save();
 
   res.json({
@@ -679,6 +680,7 @@ const markInterviewCompleted = asyncHandler(async (req, res) => {
 
   // ✅ Mark interview passed
   candidate.applicationStage = "Interview Completed";
+  candidate.interviewCompletedAt = new Date();
   await candidate.save();
 
   res.json({
@@ -714,6 +716,7 @@ const markSelected = asyncHandler(async (req, res) => {
 
   // ✅ Mark selected
   candidate.applicationStage = "Selected";
+  candidate.selectedAt = new Date();
   await candidate.save();
 
   res.json({

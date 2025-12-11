@@ -172,6 +172,140 @@ module.exports = () => {
       },
 
       /* =====================
+          STAGE TIMELINE
+        ====================== */
+
+      resumeReviewedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("resumeReviewedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      shortlistedForExamAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("shortlistedForExamAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      shortlistedForInterviewAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("shortlistedForInterviewAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      examAssignedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("examAssignedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      examReassignedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("examReassignedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      examCompletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("examCompletedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      interviewScheduledAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("interviewScheduledAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      interviewCompletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("interviewCompletedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      selectedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("selectedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      rejectedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("rejectedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      /* =====================
           SYSTEM
       ====================== */
 

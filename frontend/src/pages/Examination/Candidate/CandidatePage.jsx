@@ -27,6 +27,7 @@ const CandidatePage = () => {
   const [reassignLoading, setReassignLoading] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedViewCandidate, setSelectedViewCandidate] = useState(null);
+  console.log("Selected View Candidate:", selectedViewCandidate);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectRemark, setRejectRemark] = useState("");
   const [selectedRejectCandidate, setSelectedRejectCandidate] = useState(null);
@@ -507,7 +508,7 @@ const CandidatePage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1400px] w-full text-sm">
+        <table className="min-w-[1350px] w-full text-sm">
           <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
             <tr>
               <th className="px-4 py-3 text-left">Name</th>
@@ -521,7 +522,7 @@ const CandidatePage = () => {
               {/* <th className="px-4 py-3 text-left">Exam</th> */}
               <th className="px-4 py-3 text-left">Last Mail</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="w-[160px] px-4 py-3 text-center sticky right-[150px] bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-20">
+              <th className="w-[160px] px-4 py-3 text-center sticky right-[100px] bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-20">
                 Quick Actions
               </th>
 
@@ -630,119 +631,122 @@ const CandidatePage = () => {
                     </span>
                   </td>
 
-                  <td className="w-[160px] px-4 py-2 text-center sticky right-[150px] bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-10">
+                  <td className="w-[160px] px-4 py-2 text-center sticky right-[100px] bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-10">
                     <div className="flex justify-center items-center gap-2">
-                      {/* ===== RESUME REVIEW ===== */}
-                      {c.applicationStage === "Applied" && c.resumeReviewed !== true && (
-                        <button
-                          onClick={() => handleResumeReview(c.id)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
-                          title="Review Resume"
-                        >
-                          Review Resume
-                        </button>
-                      )}
+                      <ButtonWrapper subModule="Candidate Management" permission="edit">
+                        {/* ===== RESUME REVIEW ===== */}
+                        {c.applicationStage === "Applied" && c.resumeReviewed !== true && (
+                          <button
+                            onClick={() => handleResumeReview(c.id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
+                            title="Review Resume"
+                          >
+                            Review Resume
+                          </button>
+                        )}
 
-                      {/* ===== SHORTLIST FOR EXAM ===== */}
-                      {c.applicationStage === "Resume Reviewed" && (
-                        <button
-                          onClick={() => handleShortlistForExam(c.id)}
-                          className="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded text-xs"
-                          title="Shortlist Candidate"
-                        >
-                          Shortlist for Exam
-                        </button>
-                      )}
+                        {/* ===== SHORTLIST FOR EXAM ===== */}
 
-                      {/* ===== SEND EXAM MAIL ===== */}
-                      {c.examStatus === "Assigned" && (
-                        <button
-                          onClick={() => {
-                            setSelectedCandidate(c);
-                            setConfirmModalOpen(true);
-                          }}
-                          disabled={sendingId === c.id}
-                          className={`${sendingId === c.id
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                            } text-white p-1.5 rounded-full transition`}
-                          title="Send Exam Mail"
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
-                      )}
+                        {c.applicationStage === "Resume Reviewed" && (
+                          <button
+                            onClick={() => handleShortlistForExam(c.id)}
+                            className="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded text-xs"
+                            title="Shortlist Candidate"
+                          >
+                            Shortlist for Exam
+                          </button>
+                        )}
 
-                      {/* ===== REASSIGN EXAM ===== */}
-                      {c.examStatus === "Assigned" && (
-                        <button
-                          onClick={() => {
-                            setSelectedReassignCandidate(c);
-                            setSelectedExamId(c.examId || "");
-                            setReassignModalOpen(true);
-                          }}
-                          className="text-purple-600 hover:text-purple-800 p-1 rounded-full transition"
-                          title="Reassign Exam"
-                        >
-                          <RefreshCcw className="w-4 h-4" />
-                        </button>
-                      )}
+                        {/* ===== SEND EXAM MAIL ===== */}
+                        {c.examStatus === "Assigned" && (
+                          <button
+                            onClick={() => {
+                              setSelectedCandidate(c);
+                              setConfirmModalOpen(true);
+                            }}
+                            disabled={sendingId === c.id}
+                            className={`${sendingId === c.id
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                              } text-white p-1.5 rounded-full transition`}
+                            title="Send Exam Mail"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        )}
 
-                      {/* ===== SHORTLIST FOR INTERVIEW ===== */}
-                      {c.applicationStage === "Exam Completed" && (
-                        <button
-                          onClick={() => handleShortlistForInterview(c.id)}
-                          className="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs"
-                          title="Shortlist Candidate for Interview"
-                        >
-                          Shortlist for Interview
-                        </button>
-                      )}
+                        {/* ===== REASSIGN EXAM ===== */}
+                        {c.examStatus === "Assigned" && (
+                          <button
+                            onClick={() => {
+                              setSelectedReassignCandidate(c);
+                              setSelectedExamId(c.examId || "");
+                              setReassignModalOpen(true);
+                            }}
+                            className="text-purple-600 hover:text-purple-800 p-1 rounded-full transition"
+                            title="Reassign Exam"
+                          >
+                            <RefreshCcw className="w-4 h-4" />
+                          </button>
+                        )}
 
-                      {/* ===== SCHEDULE INTERVIEW ===== */}
-                      {c.applicationStage === "Shortlisted for Interview" && (
-                        <button
-                          onClick={() => {
-                            setSelectedInterviewCandidate(c);
-                            setInterviewModalOpen(true);
-                          }}
-                          className="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs"
-                          title="Schedule Interview"
-                        >
-                          Schedule Interview
-                        </button>
-                      )}
+                        {/* ===== SHORTLIST FOR INTERVIEW ===== */}
+                        {c.applicationStage === "Exam Completed" && (
+                          <button
+                            onClick={() => handleShortlistForInterview(c.id)}
+                            className="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs"
+                            title="Shortlist Candidate for Interview"
+                          >
+                            Shortlist for Interview
+                          </button>
+                        )}
 
-                      {/* ===== INTERVIEW Completed ===== */}
-                      {c.applicationStage === "Interview Scheduled" && (
-                        <button
-                          onClick={() => handleInterviewCompleted(c.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-                          title="Mark Interview Completed"
-                        >
-                          Mark as Completed
-                        </button>
-                      )}
+                        {/* ===== SCHEDULE INTERVIEW ===== */}
+                        {c.applicationStage === "Shortlisted for Interview" && (
+                          <button
+                            onClick={() => {
+                              setSelectedInterviewCandidate(c);
+                              setInterviewModalOpen(true);
+                            }}
+                            className="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs"
+                            title="Schedule Interview"
+                          >
+                            Schedule Interview
+                          </button>
+                        )}
 
-                      {/* ===== SELECT CANDIDATE ===== */}
-                      {c.applicationStage === "Interview Completed" && (
-                        <button
-                          onClick={() => handleSelectCandidate(c.id)}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs"
-                          title="Mark Selected"
-                        >
-                          Mark as Selected
-                        </button>
-                      )}
-                      {/* ===== HIRE BUTTON ===== */}
-                      {c.applicationStage === "Selected" && (
-                        <button
-                          onClick={() => openHireModal(c.id)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs"
-                        >
-                          Hire
-                        </button>
-                      )}
+                        {/* ===== INTERVIEW Completed ===== */}
+                        {c.applicationStage === "Interview Scheduled" && (
+                          <button
+                            onClick={() => handleInterviewCompleted(c.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                            title="Mark Interview Completed"
+                          >
+                            Mark as Completed
+                          </button>
+                        )}
 
+                        {/* ===== SELECT CANDIDATE ===== */}
+                        {c.applicationStage === "Interview Completed" && (
+                          <button
+                            onClick={() => handleSelectCandidate(c.id)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs"
+                            title="Mark Selected"
+                          >
+                            Mark as Selected
+                          </button>
+                        )}
+
+                        {/* ===== HIRE BUTTON ===== */}
+                        {c.applicationStage === "Selected" && (
+                          <button
+                            onClick={() => openHireModal(c.id)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs"
+                          >
+                            Hire
+                          </button>
+                        )}
+                      </ButtonWrapper>
                     </div>
                   </td>
 
@@ -773,19 +777,20 @@ const CandidatePage = () => {
                           <Pencil className="w-4 h-4" />
                         </button>
                       </ButtonWrapper>
-                      {c.applicationStage !== "Hired" &&
-                        c.applicationStage !== "Rejected" && (
-                          <button
-                            onClick={() => {
-                              setSelectedRejectCandidate(c);
-                              setRejectModalOpen(true);
-                            }}
-                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1"
-                          >
-                            Reject
-                          </button>
-                        )}
-
+                      <ButtonWrapper subModule="Candidate Management" permission="edit">
+                        {c.applicationStage !== "Hired" &&
+                          c.applicationStage !== "Rejected" && (
+                            <button
+                              onClick={() => {
+                                setSelectedRejectCandidate(c);
+                                setRejectModalOpen(true);
+                              }}
+                              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1"
+                            >
+                              Reject
+                            </button>
+                          )}
+                      </ButtonWrapper>
                     </div>
                   </td>
                 </tr>
@@ -968,6 +973,64 @@ const CandidatePage = () => {
                 resize-none leading-relaxed shadow-sm
               "
                   />
+                </div>
+
+                {/* Interview Details */}
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Interview Details</h5>
+
+                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
+                    <p><b>Date:</b> {selectedViewCandidate?.interviewDateTime
+                      ? new Date(selectedViewCandidate.interviewDateTime).toLocaleString()
+                      : "N/A"}</p>
+                    <p><b>Mode:</b> {selectedViewCandidate?.interviewMode || "N/A"}</p>
+                    <p><b>Panel:</b> {selectedViewCandidate?.interviewPanel || "N/A"}</p>
+                    <p><b>Location:</b> {selectedViewCandidate?.interviewLocation || "N/A"}</p>
+                    <p className="col-span-3"><b>Remarks:</b> {selectedViewCandidate?.interviewRemarks || "N/A"}</p>
+                  </div>
+                </div>
+
+                {/* Joining Details */}
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Joining Details</h5>
+
+                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
+                    <p><b>Joining Date:</b> {selectedViewCandidate?.joiningDate || "N/A"}</p>
+                    <p><b>Stage:</b> {selectedViewCandidate?.applicationStage || "N/A"}</p>
+                    <p><b>HR Rating:</b> {selectedViewCandidate?.hrRating || "N/A"} ⭐</p>
+                  </div>
+                </div>
+
+                {/* Candidate Lifecycle Log */}
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Candidate Lifecycle</h5>
+
+                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
+                    <p><b>Resume Reviewed At:</b> {selectedViewCandidate?.resumeReviewedAt || "N/A"}</p>
+                    <p><b>Shortlisted For Exam:</b> {selectedViewCandidate?.shortlistedForExamAt || "N/A"}</p>
+                    <p><b>Exam Assigned At:</b> {selectedViewCandidate?.examAssignedAt || "N/A"}</p>
+
+                    <p><b>Exam Reassigned At:</b> {selectedViewCandidate?.examReassignedAt || "N/A"}</p>
+                    <p><b>Exam Completed At:</b> {selectedViewCandidate?.examCompletedAt || "N/A"}</p>
+                    <p><b>Shortlisted For Interview:</b> {selectedViewCandidate?.shortlistedForInterviewAt || "N/A"}</p>
+
+                    <p><b>Interview Scheduled At:</b> {selectedViewCandidate?.interviewScheduledAt || "N/A"}</p>
+                    <p><b>Interview Completed At:</b> {selectedViewCandidate?.interviewCompletedAt || "N/A"}</p>
+                    <p><b>Selected At:</b> {selectedViewCandidate?.selectedAt || "N/A"}</p>
+
+                    <p><b>Rejected At:</b> {selectedViewCandidate?.rejectedAt || "N/A"}</p>
+                  </div>
+                </div>
+
+
+                {/* System Metadata */}
+                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
+                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">System Metadata</h5>
+
+                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
+                    <p><b>Resume Reviewed:</b> {selectedViewCandidate?.resumeReviewed ? "Yes" : "No"}</p>
+                    <p><b>Active:</b> {selectedViewCandidate?.isActive ? "Yes" : "No"}</p>
+                  </div>
                 </div>
 
               </section>

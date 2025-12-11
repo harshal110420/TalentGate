@@ -81,6 +81,7 @@ export const shortlistCandidateForExam = createAsyncThunk(
       const res = await axiosInstance.post(
         `/candidate/shortlist-candidate-for-exam/${id}`
       );
+      console.log("shortlisted candidate for exam:", res.data.candidate);
       return res.data.candidate;
     } catch (err) {
       return thunkAPI.rejectWithValue(
