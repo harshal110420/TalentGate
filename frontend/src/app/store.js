@@ -48,21 +48,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: [
-    "userPermission",
-    "permission",
-    "roles",
-    "menus",
-    "modules",
-    "users",
-    "department",
-    "level",
-    "questions",
-    "subjects",
-    "candidate",
-    "exam",
-    "careerApplication",
-  ], // ✅ roleForm jaise forms ka temporary state store nahi karte mostly
+  whitelist: ["users", "permission", "userPermission", "roles"], // ✅ roleForm jaise forms ka temporary state store nahi karte mostly
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

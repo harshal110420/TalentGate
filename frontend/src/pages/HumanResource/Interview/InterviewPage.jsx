@@ -5,6 +5,7 @@ import { fetchAllCandidates, rejectCandidate, scheduleInterview, markInterviewCo
 import SkeletonPage from "../../../components/skeletons/skeletonPage";
 import ButtonWrapper from "../../../components/ButtonWrapper";
 import { toast } from "react-toastify";
+import CustomCalendar from "../../../components/common/CustomCalendar";
 
 
 const CandidatesOverviewPage = () => {
@@ -189,7 +190,6 @@ const CandidatesOverviewPage = () => {
     }
   };
 
-
   const handleInterviewCompleted = async (id) => {
     try {
       await dispatch(markInterviewCompleted(id)).unwrap();
@@ -238,12 +238,29 @@ const CandidatesOverviewPage = () => {
     }
   };
 
+  const calculateDuration = (start, end) => {
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+
+    const startMinutes = sh * 60 + sm;
+    const endMinutes = eh * 60 + em;
+
+    if (endMinutes <= startMinutes) return "Invalid time range";
+
+    const diff = endMinutes - startMinutes;
+    const hours = Math.floor(diff / 60);
+    const minutes = diff % 60;
+
+    return `${hours ? `${hours}h ` : ""}${minutes}m`;
+  };
+
+
+
   return (
     <div className="max-w-full px-5 py-5 font-sans text-gray-800 dark:text-gray-100">
-
-      {/* -------------------------------- HEADER -------------------------------- */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-2xl font-semibold">Interview Scheduled Screen</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Interview Scheduled Screen</h1>
       </div>
 
       {/* -------------------------------- FILTERS -------------------------------- */}
@@ -324,7 +341,7 @@ const CandidatesOverviewPage = () => {
 
       {/* -------------------------------- TABLE -------------------------------- */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1150px] w-full text-sm">
+        <table className="min-w-[1000px] w-full text-sm">
           <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
             <tr>
               <th className="px-4 py-3 text-left">Candidate</th>
@@ -548,45 +565,45 @@ const CandidatesOverviewPage = () => {
           </div>
         </div>
       )}
+      {/* ===== Interview Scheduling Modal ===== */}
       {interviewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
 
             {/* ===== HEADER ===== */}
-            <div className="px-6 py-4 border-b dark:border-gray-700 flex justify-between items-center">
-              <h2 className="text-lg font-semibold">
+            <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
                 Schedule Interview — {selectedInterviewCandidate?.name}
               </h2>
               <button
                 onClick={() => setInterviewModalOpen(false)}
-                className="text-gray-500 hover:text-gray-800"
+                className="text-slate-400 hover:text-slate-600 text-lg"
               >
                 ✕
               </button>
             </div>
 
             {/* ===== BODY ===== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 overflow-y-auto">
 
               {/* ---------------- LEFT : DATE ---------------- */}
-              <div className="border rounded-xl p-4">
-                <h4 className="text-sm font-semibold mb-3 text-gray-700">
+              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+                <h4 className="text-sm font-semibold uppercase  mb-3 text-gray-700">
                   Select Interview Date
                 </h4>
 
-                <input
-                  type="date"
-                  value={interviewForm.date}
-                  onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, date: e.target.value })
+                <CustomCalendar
+                  selectedDate={interviewForm.date}
+                  onSelect={(date) =>
+                    setInterviewForm({ ...interviewForm, date })
                   }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
 
                 <p className="text-xs text-gray-500 mt-2">
                   Choose a suitable date for the interview
                 </p>
               </div>
+
 
               {/* ---------------- RIGHT : DETAILS ---------------- */}
               <div className="space-y-3">
@@ -597,7 +614,7 @@ const CandidatesOverviewPage = () => {
                   onChange={(e) =>
                     setInterviewForm({ ...interviewForm, roundType: e.target.value })
                   }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                 >
                   <option value="Technical">Technical Round</option>
                   <option value="HR">HR Round</option>
@@ -605,25 +622,69 @@ const CandidatesOverviewPage = () => {
                 </select>
 
                 {/* Time */}
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="time"
-                    value={interviewForm.startTime}
-                    onChange={(e) =>
-                      setInterviewForm({ ...interviewForm, startTime: e.target.value })
-                    }
-                    className="border rounded-lg px-3 py-2 text-sm"
-                  />
+                {/* ---------------- TIME SLOT ---------------- */}
+                <div className="rounded-xl p-4 space-y-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <h4 className="text-sm font-semibold text-gray-700">
+                    Interview Time Slot
+                  </h4>
 
-                  <input
-                    type="time"
-                    value={interviewForm.endTime}
-                    onChange={(e) =>
-                      setInterviewForm({ ...interviewForm, endTime: e.target.value })
-                    }
-                    className="border rounded-lg px-3 py-2 text-sm"
-                  />
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                    {/* Start Time */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={interviewForm.startTime}
+                        onChange={(e) =>
+                          setInterviewForm({
+                            ...interviewForm,
+                            startTime: e.target.value,
+                          })
+                        }
+                        className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none"
+                      />
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="mt-5 text-gray-400 text-lg">
+                      →
+                    </div>
+
+                    {/* End Time */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={interviewForm.endTime}
+                        onChange={(e) =>
+                          setInterviewForm({
+                            ...interviewForm,
+                            endTime: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Duration (future-ready) */}
+                  {interviewForm.startTime && interviewForm.endTime && (
+                    <p className="text-xs text-gray-600">
+                      Duration:{" "}
+                      <span className="font-medium">
+                        {calculateDuration(
+                          interviewForm.startTime,
+                          interviewForm.endTime
+                        )}
+                      </span>
+                    </p>
+                  )}
                 </div>
+
 
                 {/* Mode */}
                 <select
@@ -631,7 +692,8 @@ const CandidatesOverviewPage = () => {
                   onChange={(e) =>
                     setInterviewForm({ ...interviewForm, mode: e.target.value })
                   }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+
                 >
                   <option value="">Select Mode</option>
                   <option value="Online">Online</option>
@@ -646,7 +708,8 @@ const CandidatesOverviewPage = () => {
                   onChange={(e) =>
                     setInterviewForm({ ...interviewForm, location: e.target.value })
                   }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+
                 />
 
                 {/* Panel */}
@@ -656,7 +719,8 @@ const CandidatesOverviewPage = () => {
                   onChange={(e) =>
                     setInterviewForm({ ...interviewForm, panel: e.target.value })
                   }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+
                 />
 
                 {/* Remarks */}
@@ -667,17 +731,17 @@ const CandidatesOverviewPage = () => {
                   onChange={(e) =>
                     setInterviewForm({ ...interviewForm, remarks: e.target.value })
                   }
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+
                 />
               </div>
             </div>
 
             {/* ===== FOOTER ===== */}
-            <div className="px-6 py-4 border-t dark:border-gray-700 flex justify-end gap-3">
+            <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800">
               <button
                 onClick={() => setInterviewModalOpen(false)}
-                className="px-4 py-2 text-sm border rounded-lg"
-              >
+                className="px-5 py-2 text-sm border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"              >
                 Cancel
               </button>
 
@@ -685,8 +749,7 @@ const CandidatesOverviewPage = () => {
                 onClick={() =>
                   handleScheduleInterview(selectedInterviewCandidate.id)
                 }
-                className="px-5 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-lg"
-              >
+                className="px-5 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-lg"              >
                 Schedule Interview
               </button>
             </div>

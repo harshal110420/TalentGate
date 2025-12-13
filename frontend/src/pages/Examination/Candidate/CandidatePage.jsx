@@ -27,29 +27,15 @@ const CandidatePage = () => {
   const [reassignLoading, setReassignLoading] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedViewCandidate, setSelectedViewCandidate] = useState(null);
-  console.log("Selected View Candidate:", selectedViewCandidate);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectRemark, setRejectRemark] = useState("");
   const [selectedRejectCandidate, setSelectedRejectCandidate] = useState(null);
-  // Interview scheduling states
-  const [interviewModalOpen, setInterviewModalOpen] = useState(false);
-  const [selectedInterviewCandidate, setSelectedInterviewCandidate] = useState(null);
-  // Selecting states
-  const [showHireModal, setShowHireModal] = useState(false);
-  const [hireCandidateId, setHireCandidateId] = useState(null);
-  const [joiningDate, setJoiningDate] = useState("");
 
-  const [interviewForm, setInterviewForm] = useState({
-    interviewDateTime: "",
-    interviewMode: "",
-    interviewLocation: "",
-    interviewPanel: "",
-    interviewRemarks: "",
-  });
 
   const modules = useSelector((state) => state.modules.list);
   const menu = useSelector((state) => state.menus.list);
   const modulePath = getModulePathByMenu("candidate_management", modules, menu);
+  console.log("modulePath", modulePath);
   const {
     list: candidates,
     loading,
@@ -303,66 +289,6 @@ const CandidatePage = () => {
     }
   };
 
-  const handleScheduleInterview = async (id) => {
-    try {
-      await dispatch(
-        scheduleInterview({
-          id,
-          payload: {},
-        })
-      ).unwrap();
-
-      toast.success("Interview Scheduled");
-      setInterviewModalOpen(false);
-    } catch (err) {
-      toast.error(err);
-    }
-  };
-
-  const handleInterviewCompleted = async (id) => {
-    try {
-      await dispatch(markInterviewCompleted(id)).unwrap();
-      toast.success("Interview completed");
-    } catch (err) {
-      toast.error(err || "Failed to mark interview completed");
-    }
-  };
-
-  const handleSelectCandidate = async (id) => {
-    try {
-      await dispatch(markSelected(id)).unwrap();
-      toast.success("Candidate Selected");
-    } catch (err) {
-      toast.error(err || "Failed to mark candidate selected");
-    }
-  };
-
-  const openHireModal = (id) => {
-    setHireCandidateId(id);
-    setJoiningDate("");
-    setShowHireModal(true);
-  };
-
-  const submitHiring = async () => {
-    if (!joiningDate) {
-      toast.error("Joining date required");
-      return;
-    }
-
-    try {
-      await dispatch(
-        markHired({ id: hireCandidateId, joiningDate })
-      ).unwrap();
-
-      toast.success("Candidate Hired Successfully");
-
-      setShowHireModal(false);
-      setHireCandidateId(null);
-    } catch (err) {
-      toast.error(err);
-    }
-  };
-
 
 
   return (
@@ -495,7 +421,7 @@ const CandidatePage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1350px] w-full text-sm">
+        <table className="min-w-[1500px] w-full text-sm">
           <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
             <tr>
               <th className="px-4 py-3 text-left">Name</th>
@@ -509,11 +435,10 @@ const CandidatePage = () => {
               {/* <th className="px-4 py-3 text-left">Exam</th> */}
               <th className="px-4 py-3 text-left">Last Mail</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="w-[160px] px-4 py-3 text-center sticky right-[100px] bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-20">
+              <th className="w-[160px] px-4 py-3 text-center sticky right-[110px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                 Quick Actions
               </th>
-
-              <th className="w-[110px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 border-l-2 border-r-2 z-30">
+              <th className="w-[110px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 z-30 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
                 Actions
               </th>
 
@@ -618,7 +543,7 @@ const CandidatePage = () => {
                     </span>
                   </td>
 
-                  <td className="w-[160px] px-4 py-2 text-center sticky right-[100px] bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-10">
+                  <td className="w-[200px] px-1 py-1 text-center sticky right-[120px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                     <div className="flex justify-center items-center gap-2">
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
                         {/* ===== RESUME REVIEW ===== */}
@@ -633,7 +558,6 @@ const CandidatePage = () => {
                         )}
 
                         {/* ===== SHORTLIST FOR EXAM ===== */}
-
                         {c.applicationStage === "Resume Reviewed" && (
                           <button
                             onClick={() => handleShortlistForExam(c.id)}
@@ -687,55 +611,11 @@ const CandidatePage = () => {
                             Shortlist for Interview
                           </button>
                         )}
-
-                        {/* ===== SCHEDULE INTERVIEW ===== */}
-                        {c.applicationStage === "Shortlisted for Interview" && (
-                          <button
-                            onClick={() => handleScheduleInterview(c.id)}
-                            className="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs"
-                            title="Schedule Interview"
-                          >
-                            Schedule Interview
-                          </button>
-
-                        )}
-
-                        {/* ===== INTERVIEW Completed ===== */}
-                        {c.applicationStage === "Interview Scheduled" && (
-                          <button
-                            onClick={() => handleInterviewCompleted(c.id)}
-                            className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-                            title="Mark Interview Completed"
-                          >
-                            Mark as Completed
-                          </button>
-                        )}
-
-                        {/* ===== SELECT CANDIDATE ===== */}
-                        {c.applicationStage === "Interview Completed" && (
-                          <button
-                            onClick={() => handleSelectCandidate(c.id)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs"
-                            title="Mark Selected"
-                          >
-                            Mark as Selected
-                          </button>
-                        )}
-
-                        {/* ===== HIRE BUTTON ===== */}
-                        {c.applicationStage === "Selected" && (
-                          <button
-                            onClick={() => openHireModal(c.id)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs"
-                          >
-                            Hire
-                          </button>
-                        )}
                       </ButtonWrapper>
                     </div>
                   </td>
 
-                  <td className="w-[110px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 border-l-2 border-r-2 z-20">
+                  <td className="w-[110px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
                     <div className="flex justify-center items-center gap-2">
 
                       {/* VIEW */}
@@ -1070,134 +950,7 @@ const CandidatePage = () => {
 
         </div>
       )}
-      {/* ===== Interview Modal ===== */}
-      {interviewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md">
 
-            <h3 className="text-lg font-bold mb-4">
-              Schedule Interview — {selectedInterviewCandidate?.name}
-            </h3>
-
-            <div className="space-y-3">
-
-              <input
-                type="datetime-local"
-                value={interviewForm.interviewDateTime}
-                onChange={(e) =>
-                  setInterviewForm({
-                    ...interviewForm,
-                    interviewDateTime: e.target.value,
-                  })
-                }
-                className="w-full input"
-              />
-
-              <select
-                value={interviewForm.interviewMode}
-                onChange={(e) =>
-                  setInterviewForm({
-                    ...interviewForm,
-                    interviewMode: e.target.value,
-                  })
-                }
-                className="w-full input"
-              >
-                <option value="">Select Mode</option>
-                <option value="Online">Online</option>
-                <option value="Offline">Offline</option>
-                <option value="Telephonic">Telephonic</option>
-              </select>
-
-              <input
-                placeholder="Interview location or Meeting link"
-                value={interviewForm.interviewLocation}
-                onChange={(e) =>
-                  setInterviewForm({
-                    ...interviewForm,
-                    interviewLocation: e.target.value,
-                  })
-                }
-                className="w-full input"
-              />
-
-              <input
-                placeholder="Interviewer / Panel"
-                value={interviewForm.interviewPanel}
-                onChange={(e) =>
-                  setInterviewForm({
-                    ...interviewForm,
-                    interviewPanel: e.target.value,
-                  })
-                }
-                className="w-full input"
-              />
-
-              <textarea
-                rows={3}
-                placeholder="Remarks"
-                value={interviewForm.interviewRemarks}
-                onChange={(e) =>
-                  setInterviewForm({
-                    ...interviewForm,
-                    interviewRemarks: e.target.value,
-                  })
-                }
-                className="w-full input"
-              />
-
-            </div>
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setInterviewModalOpen(false)}
-                className="px-4 py-2 text-sm bg-gray-300 hover:bg-gray-400 rounded"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleScheduleInterview}
-                className="px-4 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded"
-              >
-                Schedule
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-      {/* ===== Hire Modal ===== */}
-      {showHireModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-5 w-[320px]">
-            <h3 className="text-lg font-semibold mb-3">Confirm Hiring</h3>
-
-            <input
-              type="date"
-              value={joiningDate}
-              onChange={(e) => setJoiningDate(e.target.value)}
-              className="w-full border px-3 py-2 mb-3 rounded"
-            />
-
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowHireModal(false)}
-                className="border px-3 py-1 rounded"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={submitHiring}
-                className="bg-emerald-600 text-white px-3 py-1 rounded"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* ===== Confirm Modal ===== */}
       <ConfirmModal
         open={confirmModalOpen}
