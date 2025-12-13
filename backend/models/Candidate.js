@@ -82,35 +82,6 @@ module.exports = () => {
       },
 
       /* =====================
-          INTERVIEW WORKFLOW
-         ===================== */
-
-      interviewDateTime: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-
-      interviewMode: {
-        type: DataTypes.ENUM("Online", "Offline", "Telephonic"),
-        allowNull: true,
-      },
-
-      interviewLocation: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      interviewPanel: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      interviewRemarks: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-
-      /* =====================
          OFFER / JOINING
        ===================== */
 

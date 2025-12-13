@@ -303,30 +303,17 @@ const CandidatePage = () => {
     }
   };
 
-  const handleScheduleInterview = async () => {
-    if (!interviewForm.interviewDateTime || !interviewForm.interviewMode) {
-      toast.error("Interview Date and Mode required");
-      return;
-    }
-
+  const handleScheduleInterview = async (id) => {
     try {
       await dispatch(
         scheduleInterview({
-          id: selectedInterviewCandidate.id,
-          payload: interviewForm,
+          id,
+          payload: {},
         })
       ).unwrap();
 
-      toast.success("Interview scheduled");
-
+      toast.success("Interview Scheduled");
       setInterviewModalOpen(false);
-      setInterviewForm({
-        interviewDateTime: "",
-        interviewMode: "",
-        interviewLocation: "",
-        interviewPanel: "",
-        interviewRemarks: "",
-      })
     } catch (err) {
       toast.error(err);
     }
@@ -704,15 +691,13 @@ const CandidatePage = () => {
                         {/* ===== SCHEDULE INTERVIEW ===== */}
                         {c.applicationStage === "Shortlisted for Interview" && (
                           <button
-                            onClick={() => {
-                              setSelectedInterviewCandidate(c);
-                              setInterviewModalOpen(true);
-                            }}
+                            onClick={() => handleScheduleInterview(c.id)}
                             className="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs"
                             title="Schedule Interview"
                           >
                             Schedule Interview
                           </button>
+
                         )}
 
                         {/* ===== INTERVIEW Completed ===== */}

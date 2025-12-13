@@ -611,25 +611,13 @@ const shortlistCandidateForInterview = asyncHandler(async (req, res) => {
 });
 
 const scheduleInterview = asyncHandler(async (req, res) => {
-  const {
-    interviewDateTime,
-    interviewMode,
-    interviewLocation,
-    interviewPanel,
-    interviewRemarks,
-  } = req.body;
-
-  if (!interviewDateTime || !interviewMode) {
-    return res.status(400).json({ message: "Interview Date & Mode required" });
-  }
-
   const candidate = await Candidate.findByPk(req.params.id);
 
   if (!candidate) {
     return res.status(404).json({ message: "Candidate not found" });
   }
 
-  // 🔒 Stage protection
+  // 🔒 Stage Protection
   if (candidate.applicationStage !== "Shortlisted for Interview") {
     return res.status(400).json({
       message:
@@ -637,12 +625,8 @@ const scheduleInterview = asyncHandler(async (req, res) => {
     });
   }
 
+  // Only stage update now
   candidate.applicationStage = "Interview Scheduled";
-  candidate.interviewDateTime = interviewDateTime;
-  candidate.interviewMode = interviewMode;
-  candidate.interviewLocation = interviewLocation;
-  candidate.interviewPanel = interviewPanel;
-  candidate.interviewRemarks = interviewRemarks;
   candidate.interviewScheduledAt = new Date();
   await candidate.save();
 

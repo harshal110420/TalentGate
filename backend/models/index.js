@@ -18,6 +18,13 @@ const Subject = require("./Subject")(dashMatrixSequelize);
 const User = require("./User")(dashMatrixSequelize);
 const UserPermission = require("./UserPermission")(dashMatrixSequelize);
 const JobOpening = require("./HR_Models/jobOpeningModel")(dashMatrixSequelize);
+const Interview = require("./HR_Models/Interview")(dashMatrixSequelize);
+const InterviewRound = require("./HR_Models/InterviewRound")(
+  dashMatrixSequelize
+);
+const InterviewScore = require("./HR_Models/InterviewScore")(
+  dashMatrixSequelize
+);
 // ==============================
 // 📦 CREATE DB OBJECT FIRST
 // ==============================
@@ -38,6 +45,9 @@ const DashMatrixDB = {
   User,
   UserPermission,
   JobOpening,
+  Interview,
+  InterviewRound,
+  InterviewScore,
 };
 
 // ==============================
@@ -166,6 +176,51 @@ JobOpening.hasMany(Candidate, {
 Candidate.belongsTo(JobOpening, {
   foreignKey: "jobId",
   as: "job",
+});
+
+// --- Candidate ↔ Interview
+Candidate.hasOne(Interview, {
+  foreignKey: "candidateId",
+  as: "interview",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+Interview.belongsTo(Candidate, { foreignKey: "candidateId", as: "candidate" });
+
+// Candidate -> ExamResult (one-to-many)
+Candidate.hasMany(ExamResult, { foreignKey: "candidateId", as: "examResults" });
+
+// --- JobOpening ↔ Interview
+JobOpening.hasMany(Interview, {
+  foreignKey: "jobId",
+  as: "interviews",
+  onDelete: "SET NULL",
+  onUpdate: "CASCADE",
+});
+Interview.belongsTo(JobOpening, { foreignKey: "jobId", as: "jobOpening" });
+
+// --- Interview ↔ InterviewRound
+Interview.hasMany(InterviewRound, {
+  foreignKey: "interviewId",
+  as: "rounds",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+InterviewRound.belongsTo(Interview, {
+  foreignKey: "interviewId",
+  as: "interview",
+});
+
+// --- InterviewRound ↔ InterviewScore
+InterviewRound.hasMany(InterviewScore, {
+  foreignKey: "roundId",
+  as: "scores",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+InterviewScore.belongsTo(InterviewRound, {
+  foreignKey: "roundId",
+  as: "round",
 });
 
 // ==============================

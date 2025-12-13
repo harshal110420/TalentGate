@@ -39,6 +39,10 @@ import UserPermissionWrapper from "../pages/Administration/User/UserPermissionWr
 import JobOpeningPage from "../pages/HumanResource/JobOpening/jobOpeningPage";
 import JobOpeningForm from "../pages/HumanResource/JobOpening/JobOpeningForm";
 import JobDetails from "../pages/HumanResource/JobOpening/JobDetails";
+import InterviewPage from "../pages/HumanResource/Interview/InterviewPage";
+import InterviewForm from "../pages/HumanResource/Interview/InterviewForm";
+import InterviewDetails from "../pages/HumanResource/Interview/InterviewDetails";
+import CandidatesOverviewPage from "../pages/HumanResource/Interview/InterviewPage";
 const ModuleRoutes = ({ moduleName }) => {
   const location = useLocation();
   const dispatch = useDispatch();
@@ -280,6 +284,17 @@ const ModuleRoutes = ({ moduleName }) => {
               <Route path="job_management/update/:id" element={<JobOpeningForm />} />
               <Route path="job_management/view/:id" element={<JobDetails />} />
             </>
+          );
+
+        case "Interview Management":
+          return (
+            <>
+              <Route path="interview_management" element={<CandidatesOverviewPage />} />
+              <Route path="interview_management/create" element={<InterviewForm />} />
+              <Route path="interview_management/update/:id" element={<InterviewForm />} />
+              <Route path="interview_management/view/:id" element={<InterviewDetails />} />
+            </>
+
           );
 
         default:
