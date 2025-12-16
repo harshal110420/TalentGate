@@ -19,10 +19,7 @@ const User = require("./User")(dashMatrixSequelize);
 const UserPermission = require("./UserPermission")(dashMatrixSequelize);
 const JobOpening = require("./HR_Models/jobOpeningModel")(dashMatrixSequelize);
 const Interview = require("./HR_Models/Interview")(dashMatrixSequelize);
-const InterviewRound = require("./HR_Models/InterviewRound")(
-  dashMatrixSequelize
-);
-const InterviewScore = require("./HR_Models/InterviewScore")(
+const InterviewPanel = require("./HR_Models/InterviewPanel")(
   dashMatrixSequelize
 );
 // ==============================
@@ -46,8 +43,7 @@ const DashMatrixDB = {
   UserPermission,
   JobOpening,
   Interview,
-  InterviewRound,
-  InterviewScore,
+  InterviewPanel,
 };
 
 // ==============================
@@ -178,50 +174,42 @@ Candidate.belongsTo(JobOpening, {
   as: "job",
 });
 
-// --- Candidate ↔ Interview
-Candidate.hasOne(Interview, {
-  foreignKey: "candidateId",
-  as: "interview",
-  onDelete: "CASCADE",
-  onUpdate: "CASCADE",
-});
-Interview.belongsTo(Candidate, { foreignKey: "candidateId", as: "candidate" });
-
 // Candidate -> ExamResult (one-to-many)
 Candidate.hasMany(ExamResult, { foreignKey: "candidateId", as: "examResults" });
 
-// --- JobOpening ↔ Interview
-JobOpening.hasMany(Interview, {
-  foreignKey: "jobId",
-  as: "interviews",
-  onDelete: "SET NULL",
-  onUpdate: "CASCADE",
-});
+// Interview ↔ Candidate & JobOpening
+
+// Candidate ↔ Interview
+Candidate.hasMany(Interview, { foreignKey: "candidateId", as: "interviews" });
+Interview.belongsTo(Candidate, { foreignKey: "candidateId", as: "candidate" });
+
+// JobOpening ↔ Interview
+JobOpening.hasMany(Interview, { foreignKey: "jobId", as: "interviews" });
 Interview.belongsTo(JobOpening, { foreignKey: "jobId", as: "jobOpening" });
 
-// --- Interview ↔ InterviewRound
-Interview.hasMany(InterviewRound, {
-  foreignKey: "interviewId",
-  as: "rounds",
-  onDelete: "CASCADE",
-  onUpdate: "CASCADE",
-});
-InterviewRound.belongsTo(Interview, {
+// User ↔ Interview (CreatedBy / Scheduler)
+
+// Who created/scheduled the interview
+User.hasMany(Interview, { foreignKey: "createdBy", as: "scheduledInterviews" });
+Interview.belongsTo(User, { foreignKey: "createdBy", as: "scheduler" });
+
+// Interview ↔ InterviewPanel
+
+// One interview has many panel members
+Interview.hasMany(InterviewPanel, { foreignKey: "interviewId", as: "panel" });
+InterviewPanel.belongsTo(Interview, {
   foreignKey: "interviewId",
   as: "interview",
 });
 
-// --- InterviewRound ↔ InterviewScore
-InterviewRound.hasMany(InterviewScore, {
-  foreignKey: "roundId",
-  as: "scores",
-  onDelete: "CASCADE",
-  onUpdate: "CASCADE",
-});
-InterviewScore.belongsTo(InterviewRound, {
-  foreignKey: "roundId",
-  as: "round",
-});
+// Each panel member links to a User
+User.hasMany(InterviewPanel, { foreignKey: "userId", as: "interviewPanels" });
+InterviewPanel.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+// Optional: AddedBy for panels
+
+User.hasMany(InterviewPanel, { foreignKey: "addedBy", as: "addedPanels" });
+InterviewPanel.belongsTo(User, { foreignKey: "addedBy", as: "addedByUser" });
 
 // ==============================
 // 🔗 AUTO-ASSOCIATE (IF AVAILABLE)

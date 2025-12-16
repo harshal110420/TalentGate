@@ -1,6 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const { DashMatrixDB } = require("../models");
-const { Candidate, Exam, Department, JobOpening } = DashMatrixDB;
+const { Candidate, Exam, Department, JobOpening, Interview } = DashMatrixDB;
 const sendEmails = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
 
@@ -638,37 +638,30 @@ const scheduleInterview = asyncHandler(async (req, res) => {
 });
 
 const markInterviewCompleted = asyncHandler(async (req, res) => {
-  const candidate = await Candidate.findByPk(req.params.id);
+  const interview = await Interview.findByPk(req.params.interviewId);
 
-  if (!candidate) {
-    return res.status(404).json({ message: "Candidate not found" });
+  if (!interview) {
+    return res.status(404).json({ message: "Interview not found" });
   }
 
-  // ⛔ Workflow protection
-  if (candidate.applicationStage === "Rejected") {
-    return res
-      .status(400)
-      .json({ message: "Rejected candidate cannot be processed" });
-  }
-
-  if (candidate.applicationStage === "Hired") {
-    return res.status(400).json({ message: "Candidate already hired" });
-  }
-
-  // ✅ Only valid if scheduled interview stage
-  if (candidate.applicationStage !== "Interview Scheduled") {
+  if (interview.status !== "Scheduled") {
     return res.status(400).json({
-      message: "Interview must be scheduled before passing",
+      message: "Only scheduled interviews can be completed",
     });
   }
 
-  // ✅ Mark interview passed
-  candidate.applicationStage = "Interview Completed";
-  candidate.interviewCompletedAt = new Date();
-  await candidate.save();
+  interview.status = "Completed";
+  await interview.save();
+
+  const candidate = await Candidate.findByPk(interview.candidateId);
+
+  await candidate.update({
+    applicationStage: "Interview Completed",
+    interviewCompletedAt: new Date(),
+  });
 
   res.json({
-    message: "Interview marked as completed",
+    message: "Interview completed successfully",
     candidate,
   });
 });

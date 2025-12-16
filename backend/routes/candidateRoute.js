@@ -110,7 +110,7 @@ router.patch(
 );
 
 router.patch(
-  "/interview-completed/:id",
+  "/interview-completed/:interviewId",
   authMiddleware,
   checkPermissionUnified(MENU_CODE, "edit", false),
   markInterviewCompleted

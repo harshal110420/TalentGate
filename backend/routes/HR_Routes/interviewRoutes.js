@@ -4,50 +4,21 @@ const authMiddleware = require("../../middleware/authMiddleware");
 const checkPermissionUnified = require("../../middleware/checkPermissionUnified");
 const MENU_CODE = "interview_management";
 const {
-  createInterview,
-  addInterviewRound,
-  addInterviewScore,
-  getInterviewDetails,
   getCandidatesOverview,
+  createInterview,
 } = require("../../controller/HR_controllers/interviewController");
 
 router.get(
   "/overview",
   authMiddleware,
-  
+  // checkPermissionUnified(MENU_CODE, "view"),
   getCandidatesOverview
 );
 
-// Create interview + default rounds
 router.post(
-  "/interview",
+  "/schedule",
   authMiddleware,
-  checkPermissionUnified(MENU_CODE, "new", false),
+  // checkPermissionUnified(MENU_CODE, "create"),
   createInterview
 );
-
-// Add custom round
-router.post(
-  "/round/:interviewId",
-  authMiddleware,
-  checkPermissionUnified(MENU_CODE, "view", false),
-  addInterviewRound
-);
-
-// Add score for a round
-router.post(
-  "/score/:roundId",
-  authMiddleware,
-  checkPermissionUnified(MENU_CODE, "view", false),
-  addInterviewScore
-);
-
-// Fetch interview details with rounds and scores
-router.get(
-  "/:candidateId",
-  authMiddleware,
-  checkPermissionUnified(MENU_CODE, "view", false),
-  getInterviewDetails
-);
-
 module.exports = router;

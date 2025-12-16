@@ -3,11 +3,11 @@ const { DashMatrixDB } = require("../../models");
 const {
   Candidate,
   JobOpening,
-  Interview,
-  InterviewRound,
-  InterviewScore,
   ExamResult,
   Department,
+  Interview,
+  InterviewPanel,
+  User,
 } = DashMatrixDB;
 
 // Fetch candidates with related job & exam info
@@ -123,6 +123,24 @@ const getCandidatesOverview = asyncHandler(async (req, res) => {
         where: resultStatus ? { resultStatus } : undefined,
         required: false,
       },
+      {
+        model: Interview,
+        as: "interviews",
+        attributes: [
+          "id",
+          "round",
+          "status",
+          "interviewDate",
+          "startTime",
+          "endTime",
+        ],
+        where: {
+          status: "scheduled",
+        },
+        required: false,
+        limit: 1,
+        order: [["createdAt", "DESC"]],
+      },
     ],
   });
 
@@ -138,133 +156,133 @@ const getCandidatesOverview = asyncHandler(async (req, res) => {
 });
 
 // -------------------- CREATE INTERVIEW --------------------
-const createInterview = asyncHandler(async (req, res) => {
-  const { candidateId, jobId, defaultRounds } = req.body;
 
-  const candidate = await Candidate.findByPk(candidateId);
-  if (!candidate)
-    return res.status(404).json({ message: "Candidate not found" });
+const createInterview = async (req, res) => {
+  try {
+    const {
+      candidateId,
+      jobId,
+      round,
+      interviewType,
+      interviewDate,
+      startTime,
+      endTime,
+      status,
+      meetingLink,
+      location,
+      notes,
+      panel, // [{ userId, role }]
+    } = req.body;
 
-  const job = await JobOpening.findByPk(jobId);
-  if (!job) return res.status(404).json({ message: "Job Opening not found" });
+    const createdBy = req.user.id; // 🔐 Always from token
 
-  // Optional: candidate belongs to this job
-  if (candidate.jobId !== job.id) {
-    return res
-      .status(400)
-      .json({ message: "Candidate not assigned to this Job Opening" });
+    // =============================
+    // BASIC VALIDATION
+    // =============================
+    if (
+      !candidateId ||
+      !jobId ||
+      !round ||
+      !interviewDate ||
+      !startTime ||
+      !endTime
+    ) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // =============================
+    // CANDIDATE VALIDATION
+    // =============================
+    const candidate = await Candidate.findByPk(candidateId);
+
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    if (candidate.applicationStage !== "Shortlisted for Interview") {
+      return res.status(400).json({
+        message:
+          "Candidate is not eligible for interview. Stage must be 'Shortlisted for Interview'.",
+      });
+    }
+
+    // =============================
+    // CREATE INTERVIEW
+    // =============================
+    const interview = await Interview.create({
+      candidateId,
+      jobId,
+      round,
+      interviewType: interviewType || "Online",
+      interviewDate,
+      startTime,
+      endTime,
+      status: status || "Scheduled",
+      meetingLink,
+      location,
+      notes,
+      panel,
+      createdBy,
+    });
+
+    // =============================
+    // UPDATE CANDIDATE STAGE
+    // =============================
+    await candidate.update({
+      applicationStage: "Interview Scheduled",
+      interviewScheduledAt: new Date(),
+    });
+
+    // =============================
+    // PANEL VALIDATION + INSERT
+    // =============================
+    // if (panel && Array.isArray(panel) && panel.length > 0) {
+    //   const allowedRoles = ["Lead", "Panelist", "Observer"];
+
+    //   const userIds = panel.map((p) => p.userId);
+
+    //   // Fetch valid users
+    //   const users = await User.findAll({
+    //     where: { id: userIds },
+    //     attributes: ["id"],
+    //   });
+
+    //   const validUserIds = users.map((u) => u.id);
+
+    //   // Check invalid users
+    //   const invalidUsers = userIds.filter((id) => !validUserIds.includes(id));
+
+    //   if (invalidUsers.length > 0) {
+    //     return res.status(400).json({
+    //       message: "Invalid panel members found",
+    //       invalidUsers,
+    //     });
+    //   }
+
+    //   const panelData = panel.map((p) => ({
+    //     interviewId: interview.id,
+    //     userId: p.userId,
+    //     role: allowedRoles.includes(p.role) ? p.role : "Panelist",
+    //     addedBy: createdBy,
+    //   }));
+
+    //   await InterviewPanel.bulkCreate(panelData);
+    // }
+
+    return res.status(201).json({
+      message: "Interview created successfully",
+      interviewId: interview.id,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-
-  // 🔒 Stage check
-  if (candidate.applicationStage !== "Shortlisted for Interview") {
-    return res
-      .status(400)
-      .json({ message: "Candidate not ready for interview" });
-  }
-
-  const interview = await Interview.create({ candidateId, jobId });
-
-  // Default rounds logic
-  let roundsToCreate = [];
-  switch (defaultRounds) {
-    case "A":
-      roundsToCreate = [{ roundNumber: 1, roundName: "Technical" }];
-      break;
-    case "B":
-      roundsToCreate = [
-        { roundNumber: 1, roundName: "Technical" },
-        { roundNumber: 2, roundName: "HR" },
-      ];
-      break;
-    case "C":
-      roundsToCreate = [
-        { roundNumber: 1, roundName: "Technical" },
-        { roundNumber: 2, roundName: "Managerial" },
-        { roundNumber: 3, roundName: "HR" },
-      ];
-      break;
-    default:
-      roundsToCreate = []; // Custom will be added separately
-  }
-
-  for (let r of roundsToCreate) {
-    await InterviewRound.create({ ...r, interviewId: interview.id });
-  }
-
-  // Update candidate stage
-  candidate.applicationStage = "Interview Scheduled";
-  await candidate.save();
-
-  res.json({ success: true, interview });
-});
-
-// -------------------- ADD CUSTOM ROUND --------------------
-const addInterviewRound = asyncHandler(async (req, res) => {
-  const { interviewId } = req.params;
-  const { roundNumber, roundName, scheduledAt, mode, location, panelMembers } =
-    req.body;
-
-  const interview = await Interview.findByPk(interviewId);
-  if (!interview)
-    return res.status(404).json({ message: "Interview not found" });
-
-  const round = await InterviewRound.create({
-    interviewId,
-    roundNumber,
-    roundName,
-    scheduledAt,
-    mode,
-    location,
-    panelMembers,
-  });
-
-  res.json({ success: true, round });
-});
-
-// -------------------- ADD SCORE --------------------
-const addInterviewScore = asyncHandler(async (req, res) => {
-  const { roundId } = req.params;
-  const { interviewerName, criteriaScores, totalScore, decision, comments } =
-    req.body;
-
-  const round = await InterviewRound.findByPk(roundId);
-  if (!round) return res.status(404).json({ message: "Round not found" });
-
-  const score = await InterviewScore.create({
-    roundId,
-    interviewerName,
-    criteriaScores,
-    totalScore,
-    decision,
-    comments,
-  });
-
-  res.json({ success: true, score });
-});
-
-// -------------------- GET INTERVIEW DETAILS --------------------
-const getInterviewDetails = asyncHandler(async (req, res) => {
-  const { candidateId } = req.params;
-
-  const interview = await Interview.findOne({
-    where: { candidateId },
-    include: {
-      model: InterviewRound,
-      as: "rounds",
-      include: { model: InterviewScore, as: "scores" },
-    },
-  });
-
-  if (!interview)
-    return res.status(404).json({ message: "Interview not found" });
-
-  res.json({ success: true, interview });
-});
+};
 
 module.exports = {
-  createInterview,
-  addInterviewRound,
-  addInterviewScore,
-  getInterviewDetails,
   getCandidatesOverview,
+  createInterview,
 };

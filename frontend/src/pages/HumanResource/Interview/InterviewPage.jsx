@@ -6,6 +6,7 @@ import SkeletonPage from "../../../components/skeletons/skeletonPage";
 import ButtonWrapper from "../../../components/ButtonWrapper";
 import { toast } from "react-toastify";
 import CustomCalendar from "../../../components/common/CustomCalendar";
+import { createInterview } from "../../../features/Interview/InterviewSlice";
 
 
 const CandidatesOverviewPage = () => {
@@ -22,15 +23,16 @@ const CandidatesOverviewPage = () => {
   });
 
   const [interviewForm, setInterviewForm] = useState({
-    date: "",
+    interviewDate: "",
     startTime: "",
     endTime: "",
-    roundType: "Technical",
-    mode: "",
-    location: "",
+    round: "Technical",
+    interviewType: "Online", // Online | Offline | Telephonic
+    locationOrLink: "",
     panel: "",
-    remarks: "",
+    notes: "",
   });
+
 
 
   // Pagination
@@ -169,22 +171,64 @@ const CandidatesOverviewPage = () => {
     }
   };
 
-  const handleScheduleInterview = async (id) => {
+  const handleScheduleInterview = async () => {
+    if (
+      !interviewForm.interviewDate ||
+      !interviewForm.startTime ||
+      !interviewForm.endTime ||
+      !interviewForm.panel
+    ) {
+      toast.error("Please fill all required interview details");
+      return;
+    }
+
     try {
       await dispatch(
-        scheduleInterview({
-          id,
-          payload: interviewForm,
+        createInterview({
+          candidateId: selectedInterviewCandidate.id,
+          jobId: selectedInterviewCandidate.job?.id,
+
+          round: interviewForm.round,
+          interviewType: interviewForm.interviewType,
+
+          interviewDate: interviewForm.interviewDate,
+          startTime: interviewForm.startTime,
+          endTime: interviewForm.endTime,
+
+          meetingLink:
+            interviewForm.interviewType === "Online"
+              ? interviewForm.locationOrLink
+              : null,
+
+          location:
+            interviewForm.interviewType !== "Online"
+              ? interviewForm.locationOrLink
+              : null,
+
+          panel: interviewForm.panel,   // ✅ ONLY THIS
+          notes: interviewForm.notes,
         })
       ).unwrap();
 
-      toast.success("Interview Scheduled");
 
-      // 🔥 IMPORTANT: Refresh overview list
+      toast.success("Interview scheduled successfully");
+
       dispatch(fetchCandidatesOverview());
 
       setInterviewModalOpen(false);
       setSelectedInterviewCandidate(null);
+
+      // reset form
+      setInterviewForm({
+        interviewDate: "",
+        startTime: "",
+        endTime: "",
+        round: "Technical",
+        interviewType: "Online",
+        locationOrLink: "",
+        notes: "",
+      });
+
     } catch (err) {
       toast.error(err || "Failed to schedule interview");
     }
@@ -433,7 +477,9 @@ const CandidatesOverviewPage = () => {
                         {/* ===== INTERVIEW Completed ===== */}
                         {row.applicationStage === "Interview Scheduled" && (
                           <button
-                            onClick={() => handleInterviewCompleted(row.id)}
+                            onClick={() =>
+                              handleInterviewCompleted(row.interviews?.[0]?.id)
+                            }
                             className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
                             title="Mark Interview Completed"
                           >
@@ -565,6 +611,7 @@ const CandidatesOverviewPage = () => {
           </div>
         </div>
       )}
+
       {/* ===== Interview Scheduling Modal ===== */}
       {interviewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -593,11 +640,12 @@ const CandidatesOverviewPage = () => {
                 </h4>
 
                 <CustomCalendar
-                  selectedDate={interviewForm.date}
+                  selectedDate={interviewForm.interviewDate}
                   onSelect={(date) =>
-                    setInterviewForm({ ...interviewForm, date })
+                    setInterviewForm({ ...interviewForm, interviewDate: date })
                   }
                 />
+
 
                 <p className="text-xs text-gray-500 mt-2">
                   Choose a suitable date for the interview
@@ -610,9 +658,9 @@ const CandidatesOverviewPage = () => {
 
                 {/* Round Type */}
                 <select
-                  value={interviewForm.roundType}
+                  value={interviewForm.round}
                   onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, roundType: e.target.value })
+                    setInterviewForm({ ...interviewForm, round: e.target.value })
                   }
                   className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
                 >
@@ -620,6 +668,7 @@ const CandidatesOverviewPage = () => {
                   <option value="HR">HR Round</option>
                   <option value="Managerial">Managerial Round</option>
                 </select>
+
 
                 {/* Time */}
                 {/* ---------------- TIME SLOT ---------------- */}
@@ -688,9 +737,9 @@ const CandidatesOverviewPage = () => {
 
                 {/* Mode */}
                 <select
-                  value={interviewForm.mode}
+                  value={interviewForm.interviewType}
                   onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, mode: e.target.value })
+                    setInterviewForm({ ...interviewForm, interviewType: e.target.value })
                   }
                   className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
 
@@ -701,16 +750,20 @@ const CandidatesOverviewPage = () => {
                   <option value="Telephonic">Telephonic</option>
                 </select>
 
+
                 {/* Location / Link */}
                 <input
                   placeholder="Interview Location or Meeting Link"
-                  value={interviewForm.location}
-                  onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, location: e.target.value })
-                  }
                   className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-
+                  value={interviewForm.locationOrLink}
+                  onChange={(e) =>
+                    setInterviewForm({
+                      ...interviewForm,
+                      locationOrLink: e.target.value,
+                    })
+                  }
                 />
+
 
                 {/* Panel */}
                 <input
@@ -727,13 +780,13 @@ const CandidatesOverviewPage = () => {
                 <textarea
                   rows={3}
                   placeholder="Remarks (optional)"
-                  value={interviewForm.remarks}
-                  onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, remarks: e.target.value })
-                  }
                   className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-
+                  value={interviewForm.notes}
+                  onChange={(e) =>
+                    setInterviewForm({ ...interviewForm, notes: e.target.value })
+                  }
                 />
+
               </div>
             </div>
 
@@ -746,9 +799,7 @@ const CandidatesOverviewPage = () => {
               </button>
 
               <button
-                onClick={() =>
-                  handleScheduleInterview(selectedInterviewCandidate.id)
-                }
+                onClick={handleScheduleInterview}
                 className="px-5 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-lg"              >
                 Schedule Interview
               </button>
