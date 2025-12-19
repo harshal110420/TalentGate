@@ -17,6 +17,7 @@ const {
   rejectCandidate,
   scheduleInterview,
   markInterviewCompleted,
+  markInterviewCancelled,
   markSelected,
   markHired,
 } = require("../controller/candidateController");
@@ -114,6 +115,13 @@ router.patch(
   authMiddleware,
   checkPermissionUnified(MENU_CODE, "edit", false),
   markInterviewCompleted
+);
+
+router.patch(
+  "/interview-cancelled/:interviewId",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "edit", false),
+  markInterviewCancelled
 );
 
 router.patch(

@@ -74,6 +74,7 @@ module.exports = () => {
           "Shortlisted for Interview",
           "Interview Scheduled",
           "Interview Completed",
+          "Interview Cancelled",
           "Selected",
           "Rejected",
           "Hired"
@@ -242,6 +243,19 @@ module.exports = () => {
         allowNull: true,
         get() {
           const raw = this.getDataValue("interviewCompletedAt");
+          return raw
+            ? new Date(raw).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+              })
+            : null;
+        },
+      },
+
+      interviewCancledAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        get() {
+          const raw = this.getDataValue("interviewCancledAt");
           return raw
             ? new Date(raw).toLocaleString("en-IN", {
                 timeZone: "Asia/Kolkata",

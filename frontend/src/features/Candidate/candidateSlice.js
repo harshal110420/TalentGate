@@ -156,6 +156,23 @@ export const markInterviewCompleted = createAsyncThunk(
   }
 );
 
+export const markInterviewCancelled = createAsyncThunk(
+  "candidate/interviewCancelled",
+  async ({ interviewId, cancelReason }, thunkAPI) => {
+    try {
+      const res = await axiosInstance.patch(
+        `/candidate/interview-cancelled/${interviewId}`,
+        { cancelReason }
+      );
+      return res.data.candidate;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Interview cancellation failed"
+      );
+    }
+  }
+);
+
 export const markSelected = createAsyncThunk(
   "candidate/markSelected",
   async (id, thunkAPI) => {
@@ -438,6 +455,27 @@ const candidateSlice = createSlice({
         }
       })
       .addCase(markInterviewCompleted.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✅ INTERVIEW CANCELLED
+      .addCase(markInterviewCancelled.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(markInterviewCancelled.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const updated = action.payload;
+
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) state.list[idx] = updated;
+
+        if (state.selected?.id === updated.id) {
+          state.selected = updated;
+        }
+      })
+      .addCase(markInterviewCancelled.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

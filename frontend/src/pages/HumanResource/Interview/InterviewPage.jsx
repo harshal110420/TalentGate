@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCandidatesOverview } from "../../../features/HR_Slices/Interview/InterviewSlice";
-import { fetchAllCandidates, rejectCandidate, scheduleInterview, markInterviewCompleted, markSelected, markHired } from "../../../features/Candidate/candidateSlice";
+import { fetchAllCandidates, rejectCandidate, scheduleInterview, markInterviewCompleted, markSelected, markHired, markInterviewCancelled } from "../../../features/Candidate/candidateSlice";
 import SkeletonPage from "../../../components/skeletons/skeletonPage";
 import ButtonWrapper from "../../../components/ButtonWrapper";
 import { toast } from "react-toastify";
@@ -40,7 +40,6 @@ const CandidatesOverviewPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 8;
   const { userList = [] } = useSelector((state) => state.users);
-  console.log("users list", userList)
   const { candidates, loading } = useSelector((state) => state.candidatesOverview);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectRemark, setRejectRemark] = useState("");
@@ -52,6 +51,10 @@ const CandidatesOverviewPage = () => {
   const [showHireModal, setShowHireModal] = useState(false);
   const [hireCandidateId, setHireCandidateId] = useState(null);
   const [joiningDate, setJoiningDate] = useState("");
+  // Cancel Interview states
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedInterviewId, setSelectedInterviewId] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
 
 
   const departments = useSelector((state) => state.department.list);
@@ -169,7 +172,7 @@ const CandidatesOverviewPage = () => {
 
       toast.success("Candidate rejected successfully");
 
-      dispatch(fetchAllCandidates());
+      dispatch(fetchCandidatesOverview());
     } catch (err) {
       toast.error(err || "Failed to reject candidate");
     } finally {
@@ -276,6 +279,33 @@ const CandidatesOverviewPage = () => {
       toast.error(err || "Failed to mark candidate selected");
     }
   };
+
+  const handleCancelInterview = async () => {
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a cancellation reason");
+      return;
+    }
+
+    try {
+      await dispatch(
+        markInterviewCancelled({
+          interviewId: selectedInterviewId,
+          cancelReason,
+        })
+      ).unwrap();
+
+      toast.success("Interview cancelled successfully");
+      dispatch(fetchCandidatesOverview());
+
+      // Reset modal & state
+      setCancelModalOpen(false);
+      setCancelReason("");
+      setSelectedInterviewId(null);
+    } catch (err) {
+      toast.error(err || "Failed to cancel interview");
+    }
+  };
+
 
   const openHireModal = (id) => {
     setHireCandidateId(id);
@@ -549,6 +579,20 @@ const CandidatesOverviewPage = () => {
                             </button>
                           )}
                       </ButtonWrapper>
+
+                      {/* <ButtonWrapper submodule="Candidate Management" permission="edit"> */}
+                      {row.applicationStage === "Interview Scheduled" && (
+                        <button
+                          onClick={() => {
+                            setSelectedInterviewId(row.interviews?.[0]?.id); // jo interview cancel karna hai
+                            setCancelModalOpen(true);
+                          }}
+                          className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                        >
+                          Cancel Interview
+                        </button>
+                      )}
+                      {/* </ButtonWrapper> */}
                     </div>
                   </td>
                 </tr>
@@ -909,6 +953,70 @@ const CandidatesOverviewPage = () => {
                 onClick={handleScheduleInterview}
                 className="px-5 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-lg"              >
                 Schedule Interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 w-[420px] rounded-xl shadow-xl p-6">
+
+            {/* Header */}
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                Cancel Interview
+              </h3>
+              <button
+                onClick={() => {
+                  setCancelModalOpen(false);
+                  setCancelReason("");
+                  setSelectedInterviewId(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Info */}
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+              Please provide a reason for cancelling this interview. This action
+              cannot be undone.
+            </p>
+
+            {/* Textarea */}
+            <textarea
+              rows={4}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Eg: Candidate unavailable, interviewer unavailable..."
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 
+                   bg-white dark:bg-slate-800 px-3 py-2 text-sm 
+                   focus:ring-2 focus:ring-red-500 outline-none"
+            />
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => {
+                  setCancelModalOpen(false);
+                  setCancelReason("");
+                  setSelectedInterviewId(null);
+                }}
+                className="px-4 py-2 text-sm rounded-lg border border-slate-300 
+                     text-slate-600 hover:bg-slate-100"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={handleCancelInterview}
+                className="px-4 py-2 text-sm rounded-lg 
+                     bg-red-600 hover:bg-red-700 text-white"
+              >
+                Confirm Cancel
               </button>
             </div>
           </div>

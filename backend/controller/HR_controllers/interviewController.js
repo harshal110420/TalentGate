@@ -34,6 +34,7 @@ const getCandidatesOverview = asyncHandler(async (req, res) => {
     "Shortlisted for Interview",
     "Interview Scheduled",
     "Interview Completed",
+    "Interview Cancelled",
     "Selected",
     "Rejected",
     "Hired",

@@ -667,6 +667,49 @@ const markInterviewCompleted = asyncHandler(async (req, res) => {
   });
 });
 
+const markInterviewCancelled = asyncHandler(async (req, res) => {
+  const { interviewId } = req.params;
+  const { cancelReason } = req.body;
+
+  const interview = await Interview.findByPk(interviewId);
+
+  if (!interview) {
+    return res.status(404).json({ message: "Interview not found" });
+  }
+
+  if (interview.status !== "Scheduled") {
+    return res.status(400).json({
+      message: "Only scheduled interviews can be cancelled",
+    });
+  }
+
+  if (!cancelReason || !cancelReason.trim()) {
+    return res.status(400).json({
+      message: "Cancel reason is required",
+    });
+  }
+
+  // ✅ Update interview
+  await interview.update({
+    status: "Cancelled",
+    cancelReason,
+  });
+
+  // ✅ Update candidate stage
+  const candidate = await Candidate.findByPk(interview.candidateId);
+
+  await candidate.update({
+    applicationStage: "Interview Cancelled",
+    interviewCancledAt: new Date(),
+  });
+
+  res.json({
+    message: "Interview cancelled successfully",
+    candidate,
+    interview,
+  });
+});
+
 const markSelected = asyncHandler(async (req, res) => {
   const candidate = await Candidate.findByPk(req.params.id);
 
@@ -766,6 +809,7 @@ module.exports = {
   rejectCandidate,
   scheduleInterview,
   markInterviewCompleted,
+  markInterviewCancelled,
   markSelected,
   markHired,
 };
