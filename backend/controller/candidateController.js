@@ -651,6 +651,7 @@ const markInterviewCompleted = asyncHandler(async (req, res) => {
   }
 
   interview.status = "Completed";
+  interview.completedAt = new Date();
   await interview.save();
 
   const candidate = await Candidate.findByPk(interview.candidateId);

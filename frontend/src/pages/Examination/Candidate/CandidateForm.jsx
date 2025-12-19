@@ -492,6 +492,7 @@ const CandidateForm = () => {
                 <input
                   type="text"
                   value={jobSearch}
+                  required
                   onChange={(e) => setJobSearch(e.target.value)}
                   placeholder="Search job..."
                   className="w-full border px-2 py-1.5 text-sm rounded border-gray-300 dark:border-gray-700

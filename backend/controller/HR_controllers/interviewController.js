@@ -221,7 +221,6 @@ const createInterview = async (req, res) => {
       meetingLink,
       location,
       notes,
-      panel,
       createdBy,
     });
 
@@ -236,38 +235,38 @@ const createInterview = async (req, res) => {
     // =============================
     // PANEL VALIDATION + INSERT
     // =============================
-    // if (panel && Array.isArray(panel) && panel.length > 0) {
-    //   const allowedRoles = ["Lead", "Panelist", "Observer"];
+    if (panel && Array.isArray(panel) && panel.length > 0) {
+      const allowedRoles = ["Lead", "Panelist", "Observer"];
 
-    //   const userIds = panel.map((p) => p.userId);
+      const userIds = panel.map((p) => p.userId);
 
-    //   // Fetch valid users
-    //   const users = await User.findAll({
-    //     where: { id: userIds },
-    //     attributes: ["id"],
-    //   });
+      // Fetch valid users
+      const users = await User.findAll({
+        where: { id: userIds },
+        attributes: ["id"],
+      });
 
-    //   const validUserIds = users.map((u) => u.id);
+      const validUserIds = users.map((u) => u.id);
 
-    //   // Check invalid users
-    //   const invalidUsers = userIds.filter((id) => !validUserIds.includes(id));
+      // Check invalid users
+      const invalidUsers = userIds.filter((id) => !validUserIds.includes(id));
 
-    //   if (invalidUsers.length > 0) {
-    //     return res.status(400).json({
-    //       message: "Invalid panel members found",
-    //       invalidUsers,
-    //     });
-    //   }
+      if (invalidUsers.length > 0) {
+        return res.status(400).json({
+          message: "Invalid panel members found",
+          invalidUsers,
+        });
+      }
 
-    //   const panelData = panel.map((p) => ({
-    //     interviewId: interview.id,
-    //     userId: p.userId,
-    //     role: allowedRoles.includes(p.role) ? p.role : "Panelist",
-    //     addedBy: createdBy,
-    //   }));
+      const panelData = panel.map((p) => ({
+        interviewId: interview.id,
+        userId: p.userId,
+        role: allowedRoles.includes(p.role) ? p.role : "Panelist",
+        addedBy: createdBy,
+      }));
 
-    //   await InterviewPanel.bulkCreate(panelData);
-    // }
+      await InterviewPanel.bulkCreate(panelData);
+    }
 
     return res.status(201).json({
       message: "Interview created successfully",

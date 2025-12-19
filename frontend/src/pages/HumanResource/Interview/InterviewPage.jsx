@@ -7,7 +7,8 @@ import ButtonWrapper from "../../../components/ButtonWrapper";
 import { toast } from "react-toastify";
 import CustomCalendar from "../../../components/common/CustomCalendar";
 import { createInterview } from "../../../features/Interview/InterviewSlice";
-
+import { fetchUsers } from "../../../features/users/userSlice";
+import Select from "react-select";
 
 const CandidatesOverviewPage = () => {
   const dispatch = useDispatch();
@@ -26,10 +27,10 @@ const CandidatesOverviewPage = () => {
     interviewDate: "",
     startTime: "",
     endTime: "",
-    round: "Technical",
+    round: "",
     interviewType: "Online", // Online | Offline | Telephonic
     locationOrLink: "",
-    panel: "",
+    panel: [],
     notes: "",
   });
 
@@ -38,7 +39,8 @@ const CandidatesOverviewPage = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 8;
-
+  const { userList = [] } = useSelector((state) => state.users);
+  console.log("users list", userList)
   const { candidates, loading } = useSelector((state) => state.candidatesOverview);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectRemark, setRejectRemark] = useState("");
@@ -55,7 +57,13 @@ const CandidatesOverviewPage = () => {
   const departments = useSelector((state) => state.department.list);
   const exams = useSelector((state) => state.exam.list);
 
+  const panelOptions = userList.map((user) => ({
+    value: user.id,
+    label: `${user.firstName} ${user.lastName || ""}`,
+  }));
+
   useEffect(() => {
+    dispatch(fetchUsers());
     dispatch(fetchCandidatesOverview());
   }, [dispatch]);
 
@@ -172,6 +180,18 @@ const CandidatesOverviewPage = () => {
   };
 
   const handleScheduleInterview = async () => {
+    // ❗ Interview round mandatory
+    if (!interviewForm.round) {
+      toast.error("Please select interview round");
+      return;
+    }
+
+    // ❗ Panel must have at least one member
+    if (!interviewForm.panel || interviewForm.panel.length === 0) {
+      toast.error("Please select interview panel");
+      return;
+    }
+    // ❗ Required fields
     if (
       !interviewForm.interviewDate ||
       !interviewForm.startTime ||
@@ -223,9 +243,10 @@ const CandidatesOverviewPage = () => {
         interviewDate: "",
         startTime: "",
         endTime: "",
-        round: "Technical",
+        round: "",
         interviewType: "Online",
         locationOrLink: "",
+        panel: [],
         notes: "",
       });
 
@@ -662,12 +683,21 @@ const CandidatesOverviewPage = () => {
                   onChange={(e) =>
                     setInterviewForm({ ...interviewForm, round: e.target.value })
                   }
-                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 
+             border border-slate-300 focus:ring-2 focus:ring-teal-500 
+             focus:border-transparent outline-none"
                 >
+                  {/* ❌ Placeholder (select nahi hona chahiye) */}
+                  <option value="" disabled>
+                    Select interview round
+                  </option>
+
+                  {/* ✅ Actual options */}
                   <option value="Technical">Technical Round</option>
                   <option value="HR">HR Round</option>
                   <option value="Managerial">Managerial Round</option>
                 </select>
+
 
 
                 {/* Time */}
@@ -765,16 +795,93 @@ const CandidatesOverviewPage = () => {
                 />
 
 
-                {/* Panel */}
-                <input
-                  placeholder="Interviewer / Panel"
-                  value={interviewForm.panel}
-                  onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, panel: e.target.value })
-                  }
-                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+                {/* ===== Interview Panel ===== */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Interview Panel
+                    <span className="ml-1 text-xs text-gray-400">(Select interviewers)</span>
+                  </label>
 
-                />
+                  {/* Multi-select dropdown */}
+                  <Select
+                    isMulti
+                    options={panelOptions}
+                    placeholder="Search and select panel members..."
+                    value={panelOptions.filter((opt) =>
+                      interviewForm.panel.some((p) => p.userId === opt.value)
+                    )}
+                    onChange={(selectedOptions) => {
+                      setInterviewForm({
+                        ...interviewForm,
+                        panel: selectedOptions.map((opt, index) => {
+                          const existing = interviewForm.panel.find(
+                            (p) => p.userId === opt.value
+                          );
+
+                          return (
+                            existing || {
+                              userId: opt.value,
+                              role: index === 0 ? "Lead" : "Panelist",
+                            }
+                          );
+                        }),
+                      });
+                    }}
+                    className="react-select-container text-sm"
+                    classNamePrefix="react-select"
+                  />
+
+                  {/* Selected panel list */}
+                  {interviewForm.panel.length > 0 && (
+                    <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-2">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        Assigned Panel Members
+                      </p>
+
+                      {interviewForm.panel.map((member) => {
+                        const user = userList.find((u) => u.id === member.userId);
+
+                        return (
+                          <div
+                            key={member.userId}
+                            className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2 hover:shadow-sm transition"
+                          >
+                            {/* Name */}
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-800">
+                                {user?.firstName} {user?.lastName}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                Interview Panel
+                              </span>
+                            </div>
+
+                            {/* Role selector */}
+                            <select
+                              value={member.role}
+                              onChange={(e) => {
+                                setInterviewForm({
+                                  ...interviewForm,
+                                  panel: interviewForm.panel.map((p) =>
+                                    p.userId === member.userId
+                                      ? { ...p, role: e.target.value }
+                                      : p
+                                  ),
+                                });
+                              }}
+                              className="text-sm rounded-md border border-gray-300 bg-white px-2 py-1
+                         focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            >
+                              <option value="Lead">Lead Interviewer</option>
+                              <option value="Panelist">Panelist</option>
+                              <option value="Observer">Observer</option>
+                            </select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
                 {/* Remarks */}
                 <textarea
