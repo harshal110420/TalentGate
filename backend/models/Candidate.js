@@ -73,6 +73,7 @@ module.exports = () => {
           "Exam Completed",
           "Shortlisted for Interview",
           "Interview Scheduled",
+          "Interview Rescheduled",
           "Interview Completed",
           "Interview Cancelled",
           "Selected",

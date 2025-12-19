@@ -33,6 +33,7 @@ const getCandidatesOverview = asyncHandler(async (req, res) => {
   const INTERVIEW_STAGES = [
     "Shortlisted for Interview",
     "Interview Scheduled",
+    "Interview Rescheduled",
     "Interview Completed",
     "Interview Cancelled",
     "Selected",
@@ -282,7 +283,70 @@ const createInterview = async (req, res) => {
   }
 };
 
+const rescheduleInterview = asyncHandler(async (req, res) => {
+  const { interviewId } = req.params;
+  const {
+    interviewDate,
+    startTime,
+    endTime,
+    interviewType,
+    meetingLink,
+    location,
+    notes,
+  } = req.body;
+
+  // 1️⃣ Fetch old interview
+  const oldInterview = await Interview.findByPk(interviewId);
+
+  if (!oldInterview) {
+    return res.status(404).json({ message: "Interview not found" });
+  }
+
+  if (oldInterview.status !== "Scheduled") {
+    return res.status(400).json({
+      message: "Only scheduled interviews can be rescheduled",
+    });
+  }
+
+  // 2️⃣ Mark old interview as Rescheduled
+  oldInterview.status = "Rescheduled";
+  await oldInterview.save();
+
+  // 3️⃣ Create new interview
+  const newInterview = await Interview.create({
+    candidateId: oldInterview.candidateId,
+    jobId: oldInterview.jobId,
+    round: oldInterview.round,
+    interviewType,
+    interviewDate,
+    startTime,
+    endTime,
+    meetingLink,
+    location,
+    notes,
+    createdBy: req.user.id, // HR
+    status: "Scheduled",
+    rescheduledFromId: oldInterview.id,
+  });
+
+  // 4️⃣ Update candidate stage
+  await Candidate.update(
+    {
+      applicationStage: "Interview Rescheduled",
+    },
+    {
+      where: { id: oldInterview.candidateId },
+    }
+  );
+
+  res.json({
+    message: "Interview rescheduled successfully",
+    interview: newInterview,
+  });
+});
+
 module.exports = {
   getCandidatesOverview,
   createInterview,
+  rescheduleInterview,
 };

@@ -6,7 +6,7 @@ import SkeletonPage from "../../../components/skeletons/skeletonPage";
 import ButtonWrapper from "../../../components/ButtonWrapper";
 import { toast } from "react-toastify";
 import CustomCalendar from "../../../components/common/CustomCalendar";
-import { createInterview } from "../../../features/Interview/InterviewSlice";
+import { createInterview, rescheduleInterview } from "../../../features/Interview/InterviewSlice";
 import { fetchUsers } from "../../../features/users/userSlice";
 import Select from "react-select";
 
@@ -55,7 +55,8 @@ const CandidatesOverviewPage = () => {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedInterviewId, setSelectedInterviewId] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
-
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [selectedRescheduleInterview, setSelectedRescheduleInterview] = useState(null);
 
   const departments = useSelector((state) => state.department.list);
   const exams = useSelector((state) => state.exam.list);
@@ -306,7 +307,6 @@ const CandidatesOverviewPage = () => {
     }
   };
 
-
   const openHireModal = (id) => {
     setHireCandidateId(id);
     setJoiningDate("");
@@ -508,63 +508,77 @@ const CandidatesOverviewPage = () => {
                   </td>
 
                   <td className="w-[160px] px-4 py-2 text-center sticky right-[110px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
-                    <div className="flex justify-center items-center gap-2">
+                    <div className="flex flex-col items-center gap-2">
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
-                        {/* ===== SCHEDULE INTERVIEW ===== */}
+
+                        {/* ===== SCHEDULE ===== */}
                         {row.applicationStage === "Shortlisted for Interview" && (
                           <button
                             onClick={() => {
                               setSelectedInterviewCandidate(row);
                               setInterviewModalOpen(true);
                             }}
-                            className="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs"
-                            title="Schedule Interview"
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white px-2 py-1.5 rounded text-xs"
                           >
                             Schedule Interview
                           </button>
-
                         )}
 
-                        {/* ===== INTERVIEW Completed ===== */}
+                        {/* ===== RESCHEDULE ===== */}
                         {row.applicationStage === "Interview Scheduled" && (
                           <button
-                            onClick={() =>
-                              handleInterviewCompleted(row.interviews?.[0]?.id)
-                            }
-                            className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-                            title="Mark Interview Completed"
+                            onClick={() => {
+                              setSelectedRescheduleInterview(row.interviews?.[0]);
+                              setRescheduleModalOpen(true);
+                            }}
+                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1.5 rounded text-xs"
                           >
-                            Mark as Completed
+                            Reschedule
                           </button>
                         )}
 
-                        {/* ===== SELECT CANDIDATE ===== */}
+                        {/* ===== MARK COMPLETED ===== */}
+                        {(row.applicationStage === "Interview Scheduled" ||
+                          row.applicationStage === "Interview Rescheduled") && (
+                            <button
+                              onClick={() =>
+                                handleInterviewCompleted(row.interviews?.[0]?.id)
+                              }
+                              className="w-full bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded text-xs"
+                            >
+                              Mark Completed
+                            </button>
+                          )}
+
+                        {/* ===== SELECT ===== */}
                         {row.applicationStage === "Interview Completed" && (
                           <button
                             onClick={() => handleSelectCandidate(row.id)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs"
-                            title="Mark Selected"
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs"
                           >
-                            Mark as Selected
+                            Select Candidate
                           </button>
                         )}
 
-                        {/* ===== HIRE BUTTON ===== */}
+                        {/* ===== HIRE ===== */}
                         {row.applicationStage === "Selected" && (
                           <button
                             onClick={() => openHireModal(row.id)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-xs"
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded text-xs"
                           >
                             Hire
                           </button>
                         )}
+
                       </ButtonWrapper>
                     </div>
                   </td>
 
 
+
                   <td className="w-[110px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
-                    <div className="flex justify-center items-center gap-2">
+                    <div className="flex flex-col items-center gap-2">
+
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
                         {row.applicationStage !== "Hired" &&
                           row.applicationStage !== "Rejected" && (
@@ -573,28 +587,27 @@ const CandidatesOverviewPage = () => {
                                 setSelectedRejectCandidate(row);
                                 setRejectModalOpen(true);
                               }}
-                              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1"
+                              className="w-full bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs"
                             >
                               Reject
                             </button>
                           )}
                       </ButtonWrapper>
 
-                      {/* <ButtonWrapper submodule="Candidate Management" permission="edit"> */}
                       {row.applicationStage === "Interview Scheduled" && (
                         <button
                           onClick={() => {
-                            setSelectedInterviewId(row.interviews?.[0]?.id); // jo interview cancel karna hai
+                            setSelectedInterviewId(row.interviews?.[0]?.id);
                             setCancelModalOpen(true);
                           }}
-                          className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                          className="w-full bg-red-500 hover:bg-red-600 text-white px-2 py-1.5 rounded text-xs"
                         >
                           Cancel Interview
                         </button>
                       )}
-                      {/* </ButtonWrapper> */}
                     </div>
                   </td>
+
                 </tr>
               ))
             )}
@@ -959,6 +972,7 @@ const CandidatesOverviewPage = () => {
         </div>
       )}
 
+      {/* ===== Interview Cancel Modal ===== */}
       {cancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-slate-900 w-[420px] rounded-xl shadow-xl p-6">
@@ -1017,6 +1031,185 @@ const CandidatesOverviewPage = () => {
                      bg-red-600 hover:bg-red-700 text-white"
               >
                 Confirm Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Interview Rescheduling Modal ===== */}
+      {rescheduleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+
+            {/* ===== HEADER ===== */}
+            <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Reschedule Interview
+              </h2>
+
+              <button
+                onClick={() => {
+                  setRescheduleModalOpen(false);
+                  setSelectedRescheduleInterview(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* ===== BODY ===== */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 overflow-y-auto">
+
+              {/* ================= LEFT : CALENDAR ================= */}
+              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+                <h4 className="text-sm font-semibold uppercase mb-3 text-gray-700">
+                  Select New Date
+                </h4>
+
+                <CustomCalendar
+                  selectedDate={interviewForm.interviewDate}
+                  onSelect={(date) =>
+                    setInterviewForm({
+                      ...interviewForm,
+                      interviewDate: date,
+                    })
+                  }
+                />
+
+                <p className="text-xs text-gray-500 mt-2">
+                  Choose a new interview date
+                </p>
+              </div>
+
+              {/* ================= RIGHT : DETAILS ================= */}
+              <div className="space-y-4">
+
+                {/* -------- TIME SLOT -------- */}
+                <div className="rounded-xl p-4 space-y-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <h4 className="text-sm font-semibold text-gray-700">
+                    New Time Slot
+                  </h4>
+
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                    {/* Start Time */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={interviewForm.startTime}
+                        onChange={(e) =>
+                          setInterviewForm({
+                            ...interviewForm,
+                            startTime: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
+                    border border-slate-300 focus:ring-2 focus:ring-yellow-500 outline-none"
+                      />
+                    </div>
+
+                    <div className="mt-5 text-gray-400 text-lg">→</div>
+
+                    {/* End Time */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={interviewForm.endTime}
+                        onChange={(e) =>
+                          setInterviewForm({
+                            ...interviewForm,
+                            endTime: e.target.value,
+                          })
+                        }
+                        className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
+                    border border-slate-300 focus:ring-2 focus:ring-yellow-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Duration */}
+                  {interviewForm.startTime && interviewForm.endTime && (
+                    <p className="text-xs text-gray-600">
+                      Duration:{" "}
+                      <span className="font-medium">
+                        {calculateDuration(
+                          interviewForm.startTime,
+                          interviewForm.endTime
+                        )}
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                {/* -------- NOTES -------- */}
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 block mb-1">
+                    Reschedule Reason / Notes
+                  </label>
+
+                  <textarea
+                    rows={3}
+                    placeholder="Mention reason for rescheduling (optional)"
+                    className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
+                border border-slate-300 focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none"
+                    value={interviewForm.notes}
+                    onChange={(e) =>
+                      setInterviewForm({
+                        ...interviewForm,
+                        notes: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ===== FOOTER ===== */}
+            <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800">
+              <button
+                onClick={() => {
+                  setRescheduleModalOpen(false);
+                  setSelectedRescheduleInterview(null);
+                }}
+                className="px-5 py-2 text-sm border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await dispatch(
+                      rescheduleInterview({
+                        interviewId: selectedRescheduleInterview.id,
+                        payload: {
+                          interviewDate: interviewForm.interviewDate,
+                          startTime: interviewForm.startTime,
+                          endTime: interviewForm.endTime,
+                          notes: interviewForm.notes,
+                        },
+                      })
+                    ).unwrap();
+
+                    toast.success("Interview rescheduled successfully");
+                    dispatch(fetchCandidatesOverview());
+
+                    setRescheduleModalOpen(false);
+                    setSelectedRescheduleInterview(null);
+                  } catch (err) {
+                    toast.error(err);
+                  }
+                }}
+                className="px-5 py-2 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg"
+              >
+                Reschedule Interview
               </button>
             </div>
           </div>

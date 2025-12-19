@@ -18,6 +18,23 @@ export const createInterview = createAsyncThunk(
   }
 );
 
+export const rescheduleInterview = createAsyncThunk(
+  "interview/rescheduleInterview",
+  async ({ interviewId, payload }, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.post(
+        `/interview/reschedule/${interviewId}`,
+        payload
+      );
+      return data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Interview reschedule failed"
+      );
+    }
+  }
+);
+
 /* =====================================
    SLICE
 ===================================== */
@@ -50,6 +67,20 @@ const interviewSlice = createSlice({
         state.interviewId = action.payload.interviewId;
       })
       .addCase(createInterview.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✅ RESCHEDULE
+      .addCase(rescheduleInterview.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(rescheduleInterview.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+      })
+      .addCase(rescheduleInterview.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

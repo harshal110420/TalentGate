@@ -6,12 +6,13 @@ const MENU_CODE = "interview_management";
 const {
   getCandidatesOverview,
   createInterview,
+  rescheduleInterview,
 } = require("../../controller/HR_controllers/interviewController");
 
 router.get(
   "/overview",
   authMiddleware,
-  // checkPermissionUnified(MENU_CODE, "view"),
+  checkPermissionUnified(MENU_CODE, "view"),
   getCandidatesOverview
 );
 
@@ -21,4 +22,12 @@ router.post(
   // checkPermissionUnified(MENU_CODE, "create"),
   createInterview
 );
+
+router.post(
+  "/reschedule/:interviewId",
+  authMiddleware,
+  // checkPermissionUnified(MENU_CODE, "edit", false),
+  rescheduleInterview
+);
+
 module.exports = router;
