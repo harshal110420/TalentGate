@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCandidates, reassignExam, markResumeReviewed, shortlistCandidateForExam, rejectCandidate, scheduleInterview, markInterviewCompleted, markSelected, markHired, shortlistCandidateForInterview } from "../../../features/Candidate/candidateSlice";
+import { fetchAllCandidates, fetchCandidateById, reassignExam, markResumeReviewed, shortlistCandidateForExam, rejectCandidate, scheduleInterview, markInterviewCompleted, markSelected, markHired, shortlistCandidateForInterview } from "../../../features/Candidate/candidateSlice";
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
 import { useNavigate } from "react-router-dom";
@@ -26,10 +26,10 @@ const CandidatePage = () => {
   const [loadingConfirm, setLoadingConfirm] = useState(false);
   const [reassignLoading, setReassignLoading] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedViewCandidate, setSelectedViewCandidate] = useState(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectRemark, setRejectRemark] = useState("");
   const [selectedRejectCandidate, setSelectedRejectCandidate] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview");
 
 
   const modules = useSelector((state) => state.modules.list);
@@ -39,8 +39,10 @@ const CandidatePage = () => {
   const {
     list: candidates,
     loading,
+    selected,
     error,
   } = useSelector((state) => state.candidate);
+  console.log('selected:', selected)
   const departments = useSelector((state) => state.department.list);
   const exams = useSelector((state) => state.exam.list);
 
@@ -69,6 +71,7 @@ const CandidatePage = () => {
 
   useEffect(() => {
     dispatch(fetchAllCandidates());
+    // dispatch(fetchCandidateById());
     dispatch(fetchAllDepartments());
     dispatch(fetchAllExams());
   }, [dispatch]);
@@ -290,6 +293,13 @@ const CandidatePage = () => {
   };
 
 
+  /* ===== Helper Function ===== */
+  const formatTime = (time) =>
+    new Date(`1970-01-01T${time}`).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
 
   return (
     <div className="max-w-full px-5 py-5 font-sans text-gray-800 dark:text-gray-100">
@@ -446,7 +456,7 @@ const CandidatePage = () => {
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-950">
             {loading ? (
-              <SkeletonPage rows={4} columns={9} />
+              <SkeletonPage rows={4} columns={10} />
             ) : currentCandidates.length === 0 ? (
               <tr>
                 <td colSpan="9" className="text-center py-5 text-gray-500">
@@ -543,32 +553,28 @@ const CandidatePage = () => {
                     </span>
                   </td>
 
-                  <td className="w-[200px] px-1 py-1 text-center sticky right-[120px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
-                    <div className="flex justify-center items-center gap-2">
+                  <td className="w-[180px] px-2 py-2 text-center sticky right-[110px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
+                    <div className="flex flex-col gap-2 items-stretch">
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
-                        {/* ===== RESUME REVIEW ===== */}
-                        {c.applicationStage === "Applied" && c.resumeReviewed !== true && (
+
+                        {c.applicationStage === "Applied" && !c.resumeReviewed && (
                           <button
                             onClick={() => handleResumeReview(c.id)}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
-                            title="Review Resume"
+                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1.5 rounded text-xs"
                           >
                             Review Resume
                           </button>
                         )}
 
-                        {/* ===== SHORTLIST FOR EXAM ===== */}
                         {c.applicationStage === "Resume Reviewed" && (
                           <button
                             onClick={() => handleShortlistForExam(c.id)}
-                            className="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded text-xs"
-                            title="Shortlist Candidate"
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs"
                           >
                             Shortlist for Exam
                           </button>
                         )}
 
-                        {/* ===== SEND EXAM MAIL ===== */}
                         {c.examStatus === "Assigned" && (
                           <button
                             onClick={() => {
@@ -576,37 +582,20 @@ const CandidatePage = () => {
                               setConfirmModalOpen(true);
                             }}
                             disabled={sendingId === c.id}
-                            className={`${sendingId === c.id
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                              } text-white p-1.5 rounded-full transition`}
-                            title="Send Exam Mail"
+                            className={`w-full px-2 py-1.5 rounded text-xs text-white
+                                ${sendingId === c.id
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-green-600 hover:bg-green-700"
+                              }`}
                           >
-                            <Send className="w-4 h-4" />
+                            Send Exam Mail
                           </button>
                         )}
 
-                        {/* ===== REASSIGN EXAM ===== */}
-                        {c.examStatus === "Assigned" && (
-                          <button
-                            onClick={() => {
-                              setSelectedReassignCandidate(c);
-                              setSelectedExamId(c.examId || "");
-                              setReassignModalOpen(true);
-                            }}
-                            className="text-purple-600 hover:text-purple-800 p-1 rounded-full transition"
-                            title="Reassign Exam"
-                          >
-                            <RefreshCcw className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        {/* ===== SHORTLIST FOR INTERVIEW ===== */}
                         {c.applicationStage === "Exam Completed" && (
                           <button
                             onClick={() => handleShortlistForInterview(c.id)}
-                            className="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs"
-                            title="Shortlist Candidate for Interview"
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs"
                           >
                             Shortlist for Interview
                           </button>
@@ -615,20 +604,22 @@ const CandidatePage = () => {
                     </div>
                   </td>
 
-                  <td className="w-[110px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
-                    <div className="flex justify-center items-center gap-2">
+
+                  <td className="w-[110px] px-3 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
+                    <div className="flex justify-center items-center gap-3">
 
                       {/* VIEW */}
                       <button
                         onClick={() => {
-                          setSelectedViewCandidate(c);
+                          dispatch(fetchCandidateById(c.id));
                           setViewModalOpen(true);
                         }}
-                        className="text-gray-600 hover:text-black p-1 rounded-full transition"
+                        className="text-gray-600 hover:text-black p-1"
                         title="View Candidate"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+
 
                       {/* EDIT */}
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
@@ -636,12 +627,14 @@ const CandidatePage = () => {
                           onClick={() =>
                             navigate(`/module/${modulePath}/candidate_management/update/${c.id}`)
                           }
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded-full transition"
+                          className="text-blue-600 hover:text-blue-800 p-1"
                           title="Edit Candidate"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                       </ButtonWrapper>
+
+                      {/* REJECT */}
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
                         {c.applicationStage !== "Hired" &&
                           c.applicationStage !== "Rejected" && (
@@ -650,9 +643,10 @@ const CandidatePage = () => {
                                 setSelectedRejectCandidate(c);
                                 setRejectModalOpen(true);
                               }}
-                              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1"
+                              className="text-red-600 hover:text-red-800 p-1"
+                              title="Reject Candidate"
                             >
-                              Reject
+                              ✕
                             </button>
                           )}
                       </ButtonWrapper>
@@ -698,212 +692,237 @@ const CandidatePage = () => {
           </button>
         </div>
       )}
-      {/* ===== View Modal ===== */}
-      {viewModalOpen && selectedViewCandidate && (
+
+      {/* ===== View Candidate Modal ===== */}
+      {/* ===== View Candidate Modal ===== */}
+      {viewModalOpen && selected && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center">
+          <div className="bg-white dark:bg-gray-900 w-[94%] max-w-7xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border dark:border-gray-700">
 
-          <div className="
-      bg-white dark:bg-gray-900
-      w-[92%] max-w-6xl 
-      h-[88vh]
-      rounded-2xl shadow-2xl
-      flex flex-col
-      overflow-hidden
-      border border-gray-200 dark:border-gray-700
-    ">
-
-            {/* ===== HEADER ===== */}
-            <div className="px-6 py-4 flex justify-between items-center border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+            {/* ================= HEADER ================= */}
+            <div className="px-6 py-4 flex justify-between items-center border-b bg-gray-50 dark:bg-gray-800">
               <div>
-                <h3 className="text-2xl font-semibold text-gray-800 dark:text-white leading-tight">
-                  {selectedViewCandidate.name}
-                </h3>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  {selectedViewCandidate.email}
-                </p>
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">{selected?.name || "-"}</h2>
+                <p className="text-sm text-gray-500">{selected?.email || "-"}</p>
               </div>
-
-              <div className="flex gap-4 items-center">
-                <span className="
-            text-xs px-3 py-1 rounded-full
-            bg-blue-100 text-blue-700 font-medium
-          ">
-                  {selectedViewCandidate.applicationStage}
+              <div className="flex items-center gap-4">
+                <span className={`px-3 py-1 text-xs rounded-full ${selected?.applicationStage === "Rejected" ? "bg-red-100 text-red-700" :
+                  selected?.applicationStage === "Selected" ? "bg-green-100 text-green-700" :
+                    "bg-blue-100 text-blue-700"
+                  } font-medium`}>
+                  {selected?.applicationStage || "N/A"}
                 </span>
-
-                <button
-                  onClick={() => setViewModalOpen(false)}
-                  className="text-2xl hover:text-red-500 transition"
-                >
-                  ✕
-                </button>
+                <button onClick={() => setViewModalOpen(false)} className="text-2xl hover:text-red-500">✕</button>
               </div>
             </div>
 
-            {/* ===== BODY ===== */}
+            {/* ================= BODY ================= */}
             <div className="flex flex-1 overflow-hidden">
 
-              {/* ===== LEFT PROFILE CARD ===== */}
-              <aside className="w-[300px] p-6 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-y-auto">
+              {/* ================= LEFT SIDEBAR ================= */}
+              <aside className="w-[280px] bg-gray-50 dark:bg-gray-800 border-r dark:border-gray-700 p-6 overflow-y-auto">
 
-                {/* Avatar + Basic Info */}
+                {/* Avatar & Name */}
                 <div className="text-center">
-                  <div className="
-              w-24 h-24 mx-auto 
-              bg-gradient-to-br from-blue-200 to-blue-100
-              dark:from-blue-700 dark:to-blue-600
-              text-white text-4xl rounded-full 
-              flex items-center justify-center font-bold shadow
-            ">
-                    {selectedViewCandidate.name[0]}
+                  <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white text-3xl flex items-center justify-center font-bold">
+                    {selected?.name?.split(" ").map(n => n[0]).join("")}
                   </div>
-
-                  <h4 className="mt-3 text-xl font-semibold text-gray-800 dark:text-white">
-                    {selectedViewCandidate.name}
-                  </h4>
-
-                  <p className="text-xs text-gray-500 mt-1">
-                    HR Rating: {selectedViewCandidate.hrRating || "N/A"} ⭐
-                  </p>
+                  <h3 className="mt-3 text-lg font-semibold text-gray-800 dark:text-white">{selected?.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1">HR Rating: {selected?.hrRating || "N/A"} ⭐</p>
                 </div>
 
-                <hr className="my-5 border-gray-300 dark:border-gray-700" />
+                <hr className="my-5" />
 
-                {/* Basic Details */}
+                {/* Basic Info */}
                 <div className="text-sm space-y-3 text-gray-700 dark:text-gray-300">
-                  <p><b>Mobile:</b> {selectedViewCandidate.mobile || "N/A"}</p>
-                  <p><b>Experience:</b> {selectedViewCandidate.experience || "N/A"}</p>
-                  <p><b>Source:</b> {selectedViewCandidate.source || "N/A"}</p>
-                  <p><b>Recruiter:</b> {selectedViewCandidate.assignedRecruiterId || "N/A"}</p>
+                  <p><b>Mobile:</b> {selected?.mobile || "N/A"}</p>
+                  <p><b>Experience:</b> {selected?.experience || "N/A"}</p>
+                  <p><b>Source:</b> {selected?.source || "N/A"}</p>
+                  <p><b>Recruiter:</b> {selected?.assignedRecruiterId ? "Assigned" : "N/A"}</p>
                 </div>
 
-                {/* Resume Button */}
-                {selectedViewCandidate.resumeUrl && (
+                {/* Resume Link */}
+                {selected?.resumeUrl && (
                   <a
-                    href={selectedViewCandidate.resumeUrl}
+                    href={selected.resumeUrl}
                     target="_blank"
-                    className="
-                block text-center mt-6 py-2 rounded-md
-                bg-blue-600 hover:bg-blue-700 
-                text-white text-sm font-medium shadow
-              "
+                    rel="noreferrer"
+                    className="block mt-6 text-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md text-sm"
                   >
                     📄 View Resume
                   </a>
                 )}
-
               </aside>
 
-              {/* ===== RIGHT DETAILS AREA ===== */}
-              <section className="flex-1 p-6 overflow-y-auto text-sm space-y-6">
+              {/* ================= RIGHT SECTION ================= */}
+              <section className="flex-1 flex flex-col overflow-hidden">
 
-                {/* Job Details */}
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Job Details</h5>
-                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
-                    <p><b>Job Code:</b> {selectedViewCandidate?.jobCode || "N/A"}</p>
-                    <p><b>Job Title:</b> {selectedViewCandidate?.job?.title || "N/A"}</p>
-                    <p><b>Designation:</b> {selectedViewCandidate?.job?.designation || "N/A"}</p>
-                    <p><b>Department:</b> {selectedViewCandidate?.department?.name || "N/A"}</p>
-                  </div>
+                {/* ================= TABS ================= */}
+                <div className="flex gap-6 px-6 py-3 border-b bg-white dark:bg-gray-900">
+                  {["overview", "selection", "notes", "timeline", "system"].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`text-sm font-medium pb-2 border-b-2 transition ${activeTab === tab ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
+                        }`}
+                    >
+                      {tab.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Exam Status */}
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Exam Status</h5>
-                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
-                    <p><b>Exam:</b> {selectedViewCandidate.examId || "Not Assigned"}</p>
-                    <p><b>Status:</b> {selectedViewCandidate.examStatus}</p>
-                    <p>
-                      <b>Last Mail:</b>{" "}
-                      {selectedViewCandidate.lastMailSentAt
-                        ? new Date(selectedViewCandidate.lastMailSentAt).toLocaleString()
-                        : "N/A"}
-                    </p>
-                  </div>
+                {/* ================= TAB CONTENT ================= */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 text-sm">
+
+                  {/* ===== OVERVIEW ===== */}
+                  {activeTab === "overview" && (
+                    <>
+                      <Section title="Job Details">
+                        <Grid>
+                          <p><b>Job Code:</b> {selected?.job?.jobCode || selected?.jobCode || "N/A"}</p>
+                          <p><b>Job Title:</b> {selected?.job?.title || "N/A"}</p>
+                          <p><b>Department:</b> {selected?.department?.name || "N/A"}</p>
+                        </Grid>
+                      </Section>
+
+                      <Section title="Current Status">
+                        <Grid>
+                          <p><b>Exam Status:</b> {selected?.examStatus || "N/A"}</p>
+                          <p><b>Application Stage:</b> {selected?.applicationStage || "N/A"}</p>
+                          <p><b>Joining Date:</b> {selected?.joiningDate || "N/A"}</p>
+                        </Grid>
+                      </Section>
+                    </>
+                  )}
+
+                  {/* ===== SELECTION ===== */}
+                  {activeTab === "selection" && (
+                    <>
+                      {/* ===== Exam Details ===== */}
+                      <Section title="Exam Details">
+                        <Grid>
+                          <p><b>Exam:</b> {selected?.exam?.name || "Not Assigned"}</p>
+                          <p><b>Status:</b> {selected?.examStatus || "N/A"}</p>
+                          <p><b>Last Mail:</b> {selected?.lastMailSentAt ? new Date(selected.lastMailSentAt).toLocaleString() : "N/A"}</p>
+                          <p><b>Positive Marks:</b> {selected?.exam?.positiveMarking || 0}</p>
+                          <p><b>Negative Marks:</b> {selected?.exam?.negativeMarking || 0}</p>
+                          <p><b>Level:</b> {selected?.exam?.levelId || "N/A"}</p>
+                          {selected?.examResults?.length > 0 && (
+                            <>
+                              <p><b>Score:</b> {selected.examResults[0].score || 0}</p>
+                              <p><b>Result Status:</b> {selected.examResults[0].resultStatus || "Pending"}</p>
+                              <p><b>Attempted:</b> {selected.examResults[0].attempted || 0} / {selected.examResults[0].totalQuestions || 0}</p>
+                            </>
+                          )}
+                        </Grid>
+                      </Section>
+
+                      {/* ===== Interview Details ===== */}
+                      <Section title="Interview Details">
+                        {selected?.interviews?.length ? (
+                          <div className="space-y-4">
+                            {selected.interviews.map((intv, idx) => (
+                              <div key={intv.id} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+                                <div className="flex justify-between items-center mb-2">
+                                  <h4 className="font-semibold">
+                                    Round {idx + 1}: {intv.round}
+                                  </h4>
+                                  <span className={`text-xs px-2 py-1 rounded ${intv.status === "Completed" ? "bg-green-100 text-green-700" :
+                                    intv.status === "Rescheduled" ? "bg-yellow-100 text-yellow-700" :
+                                      "bg-blue-100 text-blue-700"
+                                    }`}>
+                                    {intv.status}
+                                  </span>
+                                </div>
+
+                                <Grid>
+                                  <p><b>Type:</b> {intv.interviewType}</p>
+                                  <p><b>Date:</b> {new Date(intv.interviewDate).toLocaleDateString("en-IN")}</p>
+                                  <p><b>Time:</b> {formatTime(intv.startTime)} – {formatTime(intv.endTime)}</p>
+                                  <p><b>Completed:</b> {intv.completedAt ? new Date(intv.completedAt).toLocaleString() : "No"}</p>
+                                  <p><b>Scheduled By:</b> {intv.scheduler?.firstName} {intv.scheduler?.lastName}</p>
+                                  <p><b>Meeting Link:</b> {intv.meetingLink || "N/A"}</p>
+                                  <p><b>Location:</b> {intv.location || "N/A"}</p>
+                                  <p><b>Outcome:</b> {selected?.selectedAt ? "Selected" : selected?.rejectedAt ? "Rejected" : "Pending"}</p>
+                                </Grid>
+
+                                <div className="mt-3">
+                                  <b>Panel:</b>
+                                  {intv.panel?.length ? (
+                                    <ul className="list-disc ml-5 mt-1">
+                                      {intv.panel.map(p => (
+                                        <li key={p.id}>
+                                          {p.user.firstName} {p.user.lastName} ({p.role}) – {p.status}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <span className="text-gray-500 ml-2">Not Assigned</span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-gray-500">No interviews scheduled</p>
+                        )}
+                      </Section>
+                    </>
+                  )}
+
+                  {/* ===== NOTES ===== */}
+                  {activeTab === "notes" && (
+                    <Section title="HR Remarks">
+                      <textarea
+                        disabled
+                        value={selected?.remarks || ""}
+                        className="w-full min-h-[160px] border rounded-md p-3 bg-gray-50 dark:bg-gray-900"
+                      />
+                    </Section>
+                  )}
+
+                  {/* ===== TIMELINE ===== */}
+                  {activeTab === "timeline" && (
+                    <Section title="Candidate Timeline">
+                      <ul className="space-y-3">
+                        {[
+                          ["Resume Reviewed", selected?.resumeReviewedAt],
+                          ["Shortlisted For Exam", selected?.shortlistedForExamAt],
+                          ["Exam Assigned", selected?.examAssignedAt],
+                          ["Exam Completed", selected?.examCompletedAt],
+                          ["Shortlisted For Interview", selected?.shortlistedForInterviewAt],
+                          ["Interview Scheduled", selected?.interviewScheduledAt],
+                          ["Interview Completed", selected?.interviewCompletedAt],
+                          ["Selected?", selected?.selectedAt],
+                          ["Rejected", selected?.rejectedAt],
+                        ].map(([label, date]) => (
+                          <li key={label} className="flex justify-between border-b pb-2">
+                            <span>{label}</span>
+                            <span className="text-gray-500">{date || "N/A"}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Section>
+                  )}
+
+                  {/* ===== SYSTEM ===== */}
+                  {activeTab === "system" && (
+                    <Section title="System Metadata">
+                      <Grid>
+                        <p><b>Resume Reviewed:</b> {selected?.resumeReviewed ? "Yes" : "No"}</p>
+                        <p><b>Active:</b> {selected?.isActive ? "Yes" : "No"}</p>
+                        <p><b>Created By:</b> {selected?.created_by}</p>
+                        <p><b>Updated By:</b> {selected?.updated_by}</p>
+                        <p><b>Created At:</b> {new Date(selected?.created_at).toLocaleString()}</p>
+                        <p><b>Updated At:</b> {new Date(selected?.updated_at).toLocaleString()}</p>
+                      </Grid>
+                    </Section>
+                  )}
+
                 </div>
-
-                {/* HR Notes */}
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">HR Remarks</h5>
-                  <textarea
-                    value={selectedViewCandidate.remarks || ""}
-                    disabled
-                    className="
-                w-full min-h-[140px]
-                px-3 py-2
-                border rounded-md
-                bg-white dark:bg-gray-900
-                text-gray-600 dark:text-gray-300
-                resize-none leading-relaxed shadow-sm
-              "
-                  />
-                </div>
-
-                {/* Interview Details */}
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Interview Details</h5>
-
-                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
-                    <p><b>Date:</b> {selectedViewCandidate?.interviewDateTime
-                      ? new Date(selectedViewCandidate.interviewDateTime).toLocaleString()
-                      : "N/A"}</p>
-                    <p><b>Mode:</b> {selectedViewCandidate?.interviewMode || "N/A"}</p>
-                    <p><b>Panel:</b> {selectedViewCandidate?.interviewPanel || "N/A"}</p>
-                    <p><b>Location:</b> {selectedViewCandidate?.interviewLocation || "N/A"}</p>
-                    <p className="col-span-3"><b>Remarks:</b> {selectedViewCandidate?.interviewRemarks || "N/A"}</p>
-                  </div>
-                </div>
-
-                {/* Joining Details */}
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Joining Details</h5>
-
-                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
-                    <p><b>Joining Date:</b> {selectedViewCandidate?.joiningDate || "N/A"}</p>
-                    <p><b>Stage:</b> {selectedViewCandidate?.applicationStage || "N/A"}</p>
-                    <p><b>HR Rating:</b> {selectedViewCandidate?.hrRating || "N/A"} ⭐</p>
-                  </div>
-                </div>
-
-                {/* Candidate Lifecycle Log */}
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">Candidate Lifecycle</h5>
-
-                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
-                    <p><b>Resume Reviewed At:</b> {selectedViewCandidate?.resumeReviewedAt || "N/A"}</p>
-                    <p><b>Shortlisted For Exam:</b> {selectedViewCandidate?.shortlistedForExamAt || "N/A"}</p>
-                    <p><b>Exam Assigned At:</b> {selectedViewCandidate?.examAssignedAt || "N/A"}</p>
-
-                    <p><b>Exam Reassigned At:</b> {selectedViewCandidate?.examReassignedAt || "N/A"}</p>
-                    <p><b>Exam Completed At:</b> {selectedViewCandidate?.examCompletedAt || "N/A"}</p>
-                    <p><b>Shortlisted For Interview:</b> {selectedViewCandidate?.shortlistedForInterviewAt || "N/A"}</p>
-
-                    <p><b>Interview Scheduled At:</b> {selectedViewCandidate?.interviewScheduledAt || "N/A"}</p>
-                    <p><b>Interview Completed At:</b> {selectedViewCandidate?.interviewCompletedAt || "N/A"}</p>
-                    <p><b>Selected At:</b> {selectedViewCandidate?.selectedAt || "N/A"}</p>
-
-                    <p><b>Rejected At:</b> {selectedViewCandidate?.rejectedAt || "N/A"}</p>
-                  </div>
-                </div>
-
-
-                {/* System Metadata */}
-                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl shadow-sm border dark:border-gray-700">
-                  <h5 className="font-semibold mb-3 text-gray-800 dark:text-white">System Metadata</h5>
-
-                  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
-                    <p><b>Resume Reviewed:</b> {selectedViewCandidate?.resumeReviewed ? "Yes" : "No"}</p>
-                    <p><b>Active:</b> {selectedViewCandidate?.isActive ? "Yes" : "No"}</p>
-                  </div>
-                </div>
-
               </section>
-
             </div>
-
           </div>
-
         </div>
       )}
 
@@ -989,3 +1008,16 @@ const CandidatePage = () => {
 };
 
 export default CandidatePage;
+
+const Section = ({ title, children }) => (
+  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
+    <h4 className="font-semibold mb-3 text-gray-800 dark:text-white">{title}</h4>
+    {children}
+  </div>
+);
+
+const Grid = ({ children }) => (
+  <div className="grid grid-cols-3 gap-4 text-gray-600 dark:text-gray-300">
+    {children}
+  </div>
+);

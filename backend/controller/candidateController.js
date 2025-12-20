@@ -1,6 +1,14 @@
 const asyncHandler = require("express-async-handler");
 const { DashMatrixDB } = require("../models");
-const { Candidate, Exam, Department, JobOpening, Interview } = DashMatrixDB;
+const {
+  Candidate,
+  Exam,
+  Department,
+  JobOpening,
+  Interview,
+  InterviewPanel,
+  User,
+} = DashMatrixDB;
 const sendEmails = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
 
@@ -96,17 +104,95 @@ const getAllCandidates = asyncHandler(async (req, res) => {
 });
 
 const getCandidateById = asyncHandler(async (req, res) => {
-  const candidate = await Candidate.findByPk(req.params.id, {
+  const { id } = req.params;
+
+  const candidate = await Candidate.findByPk(id, {
     include: [
-      { model: Exam, as: "exam" },
-      { model: Department, as: "department" },
+      // ===== Department =====
+      {
+        model: Department,
+        as: "department",
+        attributes: ["id", "name", "isActive"],
+      },
+
+      // ===== Job Opening =====
+      {
+        model: JobOpening,
+        as: "job",
+        attributes: ["id", "jobCode", "title"],
+      },
+
+      // ===== Exam =====
+      {
+        model: Exam,
+        as: "exam",
+        attributes: [
+          "id",
+          "name",
+          "positiveMarking",
+          "negativeMarking",
+          "levelId",
+        ],
+      },
+
+      // ===== Interviews =====
+      {
+        model: Interview,
+        as: "interviews",
+        required: false,
+        separate: true,
+        attributes: [
+          "id",
+          "round",
+          "interviewType",
+          "interviewDate",
+          "startTime",
+          "endTime",
+          "status",
+          "meetingLink",
+          "location",
+          "completedAt",
+          "createdAt",
+        ],
+        order: [[Interview.sequelize.col("interviewDate"), "ASC"]],
+        include: [
+          // Scheduler (HR)
+          {
+            model: User,
+            as: "scheduler",
+            attributes: ["id", "firstName", "lastName", "mail"],
+          },
+          // Interview Panel
+          {
+            model: InterviewPanel,
+            as: "panel",
+            required: false,
+            include: [
+              {
+                model: User,
+                as: "user",
+                attributes: ["id", "firstName", "lastName", "mail"],
+              },
+              {
+                model: User,
+                as: "addedByUser",
+                attributes: ["id", "firstName", "lastName"],
+              },
+            ],
+          },
+        ],
+      },
     ],
   });
-  if (!candidate)
+
+  if (!candidate) {
     return res.status(404).json({ message: "Candidate not found" });
-  res
-    .status(200)
-    .json({ message: "Candidate fetched successfully", candidate });
+  }
+
+  res.status(200).json({
+    message: "Candidate fetched successfully",
+    candidate,
+  });
 });
 
 const updateCandidate = asyncHandler(async (req, res) => {

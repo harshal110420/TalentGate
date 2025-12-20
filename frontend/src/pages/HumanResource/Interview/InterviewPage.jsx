@@ -482,8 +482,6 @@ const CandidatesOverviewPage = () => {
                     {row.examResults?.[0]?.resultStatus ?? "-"}
                   </td>
 
-
-
                   <td className="px-4 py-2">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap
