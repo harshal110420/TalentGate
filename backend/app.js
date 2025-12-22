@@ -21,6 +21,7 @@ const jobOpeningRoutes = require("./routes/HR_Routes/jobOpeningRoutes");
 const jobPublicRoutes = require("./routes/HR_Routes/jobPublicRoutes");
 const jobApplyRoutes = require("./routes/Public_routes/publicCareerRoutes");
 const interviewRoutes = require("./routes/HR_Routes/interviewRoutes");
+const interviewScoreRoute = require("./routes/HR_Routes/interviewScoreRoutes");
 dotenv.config();
 
 const app = express();
@@ -52,6 +53,7 @@ app.use("/api/exam_results", examResultRoutes); // Exam Result-related routes
 // app.use("/api/website/careers", websiteCareerRoutes);
 app.use("/api/job-openings", jobOpeningRoutes); // Job Opening-related routes
 app.use("/api/interview", interviewRoutes); // Interview-related routes
+app.use("/api/interview-score", interviewScoreRoute); // Interview Score-related routes
 // public routes
 app.use("/api/public", jobPublicRoutes);
 app.use("/api/careers", jobApplyRoutes);

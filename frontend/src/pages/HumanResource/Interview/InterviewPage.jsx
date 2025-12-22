@@ -9,6 +9,7 @@ import CustomCalendar from "../../../components/common/CustomCalendar";
 import { createInterview, rescheduleInterview } from "../../../features/Interview/InterviewSlice";
 import { fetchUsers } from "../../../features/users/userSlice";
 import Select from "react-select";
+import { UserRoundX } from "lucide-react";
 
 const CandidatesOverviewPage = () => {
   const dispatch = useDispatch();
@@ -447,7 +448,7 @@ const CandidatesOverviewPage = () => {
               <th className="w-[160px] px-4 py-3 text-center sticky right-[110px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                 Quick Actions
               </th>
-              <th className="w-[110px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 z-30 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
+              <th className="w-[160px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 z-30 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
                 Actions
               </th>
             </tr>
@@ -574,7 +575,7 @@ const CandidatesOverviewPage = () => {
 
 
 
-                  <td className="w-[110px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
+                  <td className="w-[160px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
                     <div className="flex flex-col items-center gap-2">
 
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
@@ -585,9 +586,10 @@ const CandidatesOverviewPage = () => {
                                 setSelectedRejectCandidate(row);
                                 setRejectModalOpen(true);
                               }}
-                              className="w-full bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs"
+                              className="text-red-600 hover:text-red-800 p-1"
+                              title="Reject Candidate"
                             >
-                              Reject
+                              <UserRoundX className="w-4 h-4" />
                             </button>
                           )}
                       </ButtonWrapper>

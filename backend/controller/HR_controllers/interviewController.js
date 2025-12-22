@@ -137,7 +137,7 @@ const getCandidatesOverview = asyncHandler(async (req, res) => {
           "endTime",
         ],
         where: {
-          status: "scheduled",
+          status: "Scheduled",
         },
         required: false,
         limit: 1,

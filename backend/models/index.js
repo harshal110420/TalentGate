@@ -22,6 +22,9 @@ const Interview = require("./HR_Models/Interview")(dashMatrixSequelize);
 const InterviewPanel = require("./HR_Models/InterviewPanel")(
   dashMatrixSequelize
 );
+const InterviewScore = require("./HR_Models/InterviewScore")(
+  dashMatrixSequelize
+);
 // ==============================
 // 📦 CREATE DB OBJECT FIRST
 // ==============================
@@ -44,6 +47,7 @@ const DashMatrixDB = {
   JobOpening,
   Interview,
   InterviewPanel,
+  InterviewScore,
 };
 
 // ==============================
@@ -210,6 +214,15 @@ InterviewPanel.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 User.hasMany(InterviewPanel, { foreignKey: "addedBy", as: "addedPanels" });
 InterviewPanel.belongsTo(User, { foreignKey: "addedBy", as: "addedByUser" });
+
+Interview.hasMany(InterviewScore, { foreignKey: "interviewId" });
+InterviewScore.belongsTo(Interview, { foreignKey: "interviewId" });
+
+User.hasMany(InterviewScore, { foreignKey: "interviewerId" });
+InterviewScore.belongsTo(User, { foreignKey: "interviewerId" });
+
+Candidate.hasMany(InterviewScore, { foreignKey: "candidateId" });
+InterviewScore.belongsTo(Candidate, { foreignKey: "candidateId" });
 
 // ==============================
 // 🔗 AUTO-ASSOCIATE (IF AVAILABLE)

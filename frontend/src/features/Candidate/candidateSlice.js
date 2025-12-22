@@ -269,6 +269,21 @@ const candidateSlice = createSlice({
       state.updateSuccess = false;
       state.error = null;
     },
+    // ✅ ADD THIS
+    updateCandidateExamStatus: (state, action) => {
+      const { candidateId, examStatus, lastMailSentAt } = action.payload;
+
+      const candidate = state.list.find((c) => c.id === candidateId);
+      if (candidate) {
+        candidate.examStatus = examStatus;
+        candidate.lastMailSentAt = lastMailSentAt;
+      }
+
+      if (state.selected?.id === candidateId) {
+        state.selected.examStatus = examStatus;
+        state.selected.lastMailSentAt = lastMailSentAt;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -276,7 +291,6 @@ const candidateSlice = createSlice({
       .addCase(fetchCandidates.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.list = []; // 👈 add this line
       })
       .addCase(fetchCandidates.fulfilled, (state, action) => {
         state.loading = false;
@@ -290,7 +304,6 @@ const candidateSlice = createSlice({
       .addCase(fetchAllCandidates.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.list = []; // 👈 add this line
       })
       .addCase(fetchAllCandidates.fulfilled, (state, action) => {
         state.loading = false;
@@ -554,6 +567,9 @@ const candidateSlice = createSlice({
   },
 });
 
-export const { clearSelectedCandidate, resetCandidateStatus } =
-  candidateSlice.actions;
+export const {
+  clearSelectedCandidate,
+  resetCandidateStatus,
+  updateCandidateExamStatus,
+} = candidateSlice.actions;
 export default candidateSlice.reducer;

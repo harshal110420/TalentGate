@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllCandidates, fetchCandidateById, reassignExam, markResumeReviewed, shortlistCandidateForExam, rejectCandidate, scheduleInterview, markInterviewCompleted, markSelected, markHired, shortlistCandidateForInterview } from "../../../features/Candidate/candidateSlice";
+import { fetchAllCandidates, fetchCandidateById, reassignExam, markResumeReviewed, shortlistCandidateForExam, rejectCandidate, scheduleInterview, markInterviewCompleted, markSelected, markHired, shortlistCandidateForInterview, updateCandidateExamStatus } from "../../../features/Candidate/candidateSlice";
 import { fetchAllDepartments } from "../../../features/department/departmentSlice";
 import { fetchAllExams } from "../../../features/Exams/examSlice";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, Pencil, Send, RefreshCcw, Eye } from "lucide-react";
+import { PlusCircle, Pencil, Send, RefreshCcw, Eye, UserRoundX } from "lucide-react";
 import { toast } from "react-toastify";
 import SkeletonPage from "../../../components/skeletons/skeletonPage";
 import { sendCandidateExamMail } from "../../../services/candidateService";
@@ -141,27 +141,56 @@ const CandidatePage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // const handleSendMail = async () => {
+  //   if (!selectedCandidate) return;
+
+  //   if (!selectedCandidate.examId) {
+  //     toast.error("This candidate has no assigned exam.");
+  //     return;
+  //   }
+
+  //   // Turant toast aur modal close
+  //   toast.success(`Mail sent successfully to ${selectedCandidate.name}!`);
+  //   setConfirmModalOpen(false);
+  //   setSelectedCandidate(null);
+
+  //   // Backend call asynchronously
+  //   try {
+  //     await sendCandidateExamMail(selectedCandidate.id);
+  //     dispatch(fetchAllCandidates());
+  //   } catch (error) {
+  //     toast.error(error?.response?.data?.message || "Failed to send mail.");
+  //   }
+  // };
+
   const handleSendMail = async () => {
     if (!selectedCandidate) return;
 
-    setLoadingConfirm(true); // start loading
-
     if (!selectedCandidate.examId) {
       toast.error("This candidate has no assigned exam.");
-      setLoadingConfirm(false);
       return;
     }
 
+    // 🔥 Optimistic UI update
+    dispatch(
+      updateCandidateExamStatus({
+        candidateId: selectedCandidate.id,
+        examStatus: "In progress",
+        lastMailSentAt: new Date().toISOString(),
+      })
+    );
+
+    toast.success(`Mail sent successfully to ${selectedCandidate.name}!`);
+    setConfirmModalOpen(false);
+    setSelectedCandidate(null);
+
     try {
-      const { data } = await sendCandidateExamMail(selectedCandidate.id);
-      toast.success(data?.message || `Mail sent successfully!`);
-      dispatch(fetchAllCandidates());
+      await sendCandidateExamMail(selectedCandidate.id);
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to send mail.");
-    } finally {
-      setLoadingConfirm(false); // stop loading
-      setConfirmModalOpen(false);
-      setSelectedCandidate(null);
+
+      // ❗ rollback if needed
+      // dispatch(fetchAllCandidates());
     }
   };
 
@@ -171,8 +200,13 @@ const CandidatePage = () => {
       return;
     }
 
-    setReassignLoading(true);
+    // Turant toast aur modal close
+    toast.success(`Exam reassigned to ${selectedReassignCandidate.name}!`);
+    setReassignModalOpen(false);
+    setSelectedReassignCandidate(null);
+    setSelectedExamId("");
 
+    // Backend call asynchronously
     try {
       await dispatch(
         reassignExam({
@@ -181,18 +215,9 @@ const CandidatePage = () => {
         })
       ).unwrap();
 
-      toast.success("Exam reassigned successfully!");
       dispatch(fetchAllCandidates());
-
-      // Modal ko success ke baad hi close karna
-      setReassignModalOpen(false);
-      setSelectedReassignCandidate(null);
-      setSelectedExamId("");
     } catch (err) {
       toast.error(err || "Failed to reassign exam");
-    } finally {
-      // Ye rehne do — but modal close yaha nahi hoga
-      setReassignLoading(false);
     }
   };
 
@@ -292,7 +317,6 @@ const CandidatePage = () => {
     }
   };
 
-
   /* ===== Helper Function ===== */
   const formatTime = (time) =>
     new Date(`1970-01-01T${time}`).toLocaleTimeString("en-IN", {
@@ -300,6 +324,21 @@ const CandidatePage = () => {
       minute: "2-digit",
       hour12: true,
     });
+
+  const getExamStatusLabel = (status) => {
+    switch (status) {
+      case "Assigned":
+        return "Assigned";
+      case "In progress":
+        return "In Progress";
+      case "Completed":
+        return "Completed";
+      case "Expired":
+        return "Link Expired";
+      default:
+        return "Not Assigned";
+    }
+  };
 
   return (
     <div className="max-w-full px-5 py-5 font-sans text-gray-800 dark:text-gray-100">
@@ -422,7 +461,7 @@ const CandidatePage = () => {
             <option value="Assigned">Assigned</option>
             <option value="In progress">In progress</option>
             <option value="Completed">Completed</option>
-            <option value="Expired">Expired</option>
+            <option value="Expired">Link Expired</option>
           </select>
 
         </div>
@@ -445,7 +484,9 @@ const CandidatePage = () => {
               {/* <th className="px-4 py-3 text-left">Exam</th> */}
               <th className="px-4 py-3 text-left">Last Mail</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="w-[160px] px-4 py-3 text-center sticky right-[110px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
+              <th className="w-[190px] px-4 py-3 text-center sticky right-[110px]
+ bg-gray-100 dark:bg-gray-800 z-20
+ shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                 Quick Actions
               </th>
               <th className="w-[110px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 z-30 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
@@ -515,7 +556,7 @@ const CandidatePage = () => {
                               : "bg-gray-200 text-gray-800"
                         }`}
                     >
-                      {c.examStatus || "Not assigned"}
+                      {getExamStatusLabel(c.examStatus)}
                     </span>
                   </td>
 
@@ -525,7 +566,7 @@ const CandidatePage = () => {
                         href={c.resumeUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        download
+
                         className="
         inline-flex items-center gap-1 px-2 py-1 
         text-xs rounded-md bg-blue-100 text-blue-700
@@ -553,11 +594,17 @@ const CandidatePage = () => {
                     </span>
                   </td>
 
-                  <td className="w-[180px] px-2 py-2 text-center sticky right-[110px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
-                    <div className="flex flex-col gap-2 items-stretch">
+                  <td className="w-[190px] px-3 py-2 text-center
+ sticky right-[110px]
+ bg-gray-50 dark:bg-gray-800 z-10
+ shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
+                    <div className="flex flex-col gap-2 w-full min-w-full items-center">
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
 
-                        {c.applicationStage === "Applied" && !c.resumeReviewed && (
+                        {/* ===== FLOW BASED ACTIONS ===== */}
+
+                        {/* 1️⃣ Resume Review */}
+                        {c.applicationStage === "Applied" && (
                           <button
                             onClick={() => handleResumeReview(c.id)}
                             className="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1.5 rounded text-xs"
@@ -566,6 +613,7 @@ const CandidatePage = () => {
                           </button>
                         )}
 
+                        {/* 2️⃣ Shortlist for Exam */}
                         {c.applicationStage === "Resume Reviewed" && (
                           <button
                             onClick={() => handleShortlistForExam(c.id)}
@@ -575,38 +623,54 @@ const CandidatePage = () => {
                           </button>
                         )}
 
-                        {c.examStatus === "Assigned" && (
+                        {/* 3️⃣ Send Exam Mail */}
+                        {(c.applicationStage === "Shortlisted for Exam" ||
+                          c.applicationStage === "Exam Assigned") &&
+                          c.examStatus === "Assigned" && (
+                            <button
+                              onClick={() => {
+                                setSelectedCandidate(c);
+                                setConfirmModalOpen(true);
+                              }}
+                              className="w-8 h-8 flex items-center justify-center rounded-full bg-green-600 hover:bg-green-700 text-white"
+                              title="Send Exam Mail"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                          )}
+
+                        {/* 4️⃣ Reassign Exam */}
+                        {c.examStatus === "Expired" && (
                           <button
                             onClick={() => {
-                              setSelectedCandidate(c);
-                              setConfirmModalOpen(true);
+                              setSelectedReassignCandidate(c);
+                              setReassignModalOpen(true);
                             }}
-                            disabled={sendingId === c.id}
-                            className={`w-full px-2 py-1.5 rounded text-xs text-white
-                                ${sendingId === c.id
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-green-600 hover:bg-green-700"
-                              }`}
+                            className="text-gray-600 hover:text-black p-1"
+                            title="Reassign Exam"
                           >
-                            Send Exam Mail
+                            <RefreshCcw className="w-4 h-4" />
                           </button>
                         )}
 
-                        {c.applicationStage === "Exam Completed" && (
-                          <button
-                            onClick={() => handleShortlistForInterview(c.id)}
-                            className="w-full bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs"
-                          >
-                            Shortlist for Interview
-                          </button>
-                        )}
+                        {/* 5️⃣ Shortlist for Interview */}
+                        {c.examStatus === "Completed" &&
+                          c.applicationStage === "Exam Completed" && (
+                            <button
+                              onClick={() => handleShortlistForInterview(c.id)}
+                              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs"
+                            >
+                              Shortlist for Interview
+                            </button>
+                          )}
+
                       </ButtonWrapper>
                     </div>
                   </td>
 
 
                   <td className="w-[110px] px-3 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
-                    <div className="flex justify-center items-center gap-3">
+                    <div className="flex justify-start items-center gap-3">
 
                       {/* VIEW */}
                       <button
@@ -619,7 +683,6 @@ const CandidatePage = () => {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-
 
                       {/* EDIT */}
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
@@ -646,7 +709,7 @@ const CandidatePage = () => {
                               className="text-red-600 hover:text-red-800 p-1"
                               title="Reject Candidate"
                             >
-                              ✕
+                              <UserRoundX className="w-4 h-4" />
                             </button>
                           )}
                       </ButtonWrapper>
@@ -693,7 +756,6 @@ const CandidatePage = () => {
         </div>
       )}
 
-      {/* ===== View Candidate Modal ===== */}
       {/* ===== View Candidate Modal ===== */}
       {viewModalOpen && selected && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center">

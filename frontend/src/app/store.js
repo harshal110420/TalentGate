@@ -22,7 +22,7 @@ import examResultPDFReducer from "../features/Exams/examResultPdfSlice";
 import userPermissionReducer from "../features/UserPermission/userPermissionSlice";
 import jobOpeningReducer from "../features/HR_Slices/jobOpening/jobOpeningSlice";
 import candidatesOverviewReducer from "../features/HR_Slices/Interview/InterviewSlice";
-
+import interviewScoreReducer from "../features/HR_Slices/Interview_scores/interviewScoreSlice";
 const rootReducer = combineReducers({
   permission: permissionReducer,
   userPermission: userPermissionReducer,
@@ -43,6 +43,7 @@ const rootReducer = combineReducers({
   examResultPdf: examResultPDFReducer,
   jobOpening: jobOpeningReducer,
   candidatesOverview: candidatesOverviewReducer,
+  interviewScore: interviewScoreReducer,
 });
 
 const persistConfig = {

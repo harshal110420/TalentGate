@@ -12,21 +12,21 @@ const {
 router.get(
   "/overview",
   authMiddleware,
-  checkPermissionUnified(MENU_CODE, "view"),
+  checkPermissionUnified(MENU_CODE, "view", false),
   getCandidatesOverview
 );
 
 router.post(
   "/schedule",
   authMiddleware,
-  // checkPermissionUnified(MENU_CODE, "create"),
+  checkPermissionUnified(MENU_CODE, "create", false),
   createInterview
 );
 
 router.post(
   "/reschedule/:interviewId",
   authMiddleware,
-  // checkPermissionUnified(MENU_CODE, "edit", false),
+  checkPermissionUnified(MENU_CODE, "edit", false),
   rescheduleInterview
 );
 
