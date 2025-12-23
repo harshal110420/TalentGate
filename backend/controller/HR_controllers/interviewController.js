@@ -283,6 +283,8 @@ const createInterview = async (req, res) => {
   }
 };
 
+// -------------------- RESCHEDULE INTERVIEW --------------------
+
 const rescheduleInterview = asyncHandler(async (req, res) => {
   const { interviewId } = req.params;
   const {
@@ -345,8 +347,88 @@ const rescheduleInterview = asyncHandler(async (req, res) => {
   });
 });
 
+// -------------------- GET MY INTERVIEWS --------------------
+// GET /api/interview/my
+// ===============================
+const getMyInterviews = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  const interviews = await Interview.findAll({
+    distinct: true, // 🔥 again important
+
+    include: [
+      {
+        model: InterviewPanel,
+        as: "panel",
+        where: { userId },
+        attributes: [],
+      },
+      {
+        model: Candidate,
+        as: "candidate",
+        attributes: ["id", "name", "email", "mobile", "applicationStage"],
+      },
+      {
+        model: JobOpening,
+        as: "jobOpening",
+        attributes: ["id", "jobCode", "title"],
+      },
+    ],
+
+    order: [["interviewDate", "ASC"]],
+  });
+
+  res.status(200).json({
+    success: true,
+    interviews,
+  });
+});
+
+// -------------------- GET ALL INTERVIEWS --------------------
+// GET /api/interview
+// ===============================
+const getAllInterviews = asyncHandler(async (req, res) => {
+  const interviews = await Interview.findAll({
+    distinct: true, // 🔥 VERY IMPORTANT
+
+    include: [
+      {
+        model: Candidate,
+        as: "candidate",
+        attributes: ["id", "name", "email", "applicationStage"],
+      },
+      {
+        model: JobOpening,
+        as: "jobOpening",
+        attributes: ["id", "jobCode", "title"],
+      },
+      {
+        model: InterviewPanel,
+        as: "panel",
+        required: false, // 👈 safe join
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: ["id", "firstName", "lastName", "mail"],
+          },
+        ],
+      },
+    ],
+
+    order: [["createdAt", "DESC"]],
+  });
+
+  res.status(200).json({
+    success: true,
+    interviews,
+  });
+});
+
 module.exports = {
   getCandidatesOverview,
   createInterview,
   rescheduleInterview,
+  getMyInterviews,
+  getAllInterviews,
 };

@@ -1,36 +1,69 @@
 const express = require("express");
 const router = express.Router();
+
 const authMiddleware = require("../../middleware/authMiddleware");
 const checkPermissionUnified = require("../../middleware/checkPermissionUnified");
-const MENU_CODE = "interview_score_management";
+
+const MENU_CODE = "interview_evaluation";
+const SCORE_MENU_CODE = "assigned_interviews";
+
 const {
+  saveDraftScore,
   submitInterviewScore,
   fetchInterviewScores,
   fetchMyInterviewScore,
+  lockInterviewScores,
 } = require("../../controller/HR_controllers/interviewScoreController");
 
-// Submit or save draft
+/**
+ * ================================
+ * Interviewer Routes
+ * ================================
+ */
+
+// Save or update draft score (editable)
 router.post(
-  "/:interviewId/submit-score",
+  "/:interviewId/draft",
   authMiddleware,
-  // checkPermissionUnified(MENU_CODE, "create"),
+  checkPermissionUnified(SCORE_MENU_CODE, "new", false),
+  saveDraftScore
+);
+
+// Submit final score (immutable)
+router.post(
+  "/:interviewId/submit",
+  authMiddleware,
+  checkPermissionUnified(SCORE_MENU_CODE, "new", false),
   submitInterviewScore
 );
 
-// HR / Admin – fetch all scores
-router.get(
-  "/:interviewId/scores",
-  authMiddleware,
-  checkPermissionUnified(MENU_CODE, "view"),
-  fetchInterviewScores
-);
-
-// Interviewer – fetch own score
+// Fetch logged-in interviewer's score
 router.get(
   "/:interviewId/my-score",
   authMiddleware,
-  // checkPermissionUnified(MENU_CODE, "view"),
+  checkPermissionUnified(SCORE_MENU_CODE, "view", false),
   fetchMyInterviewScore
 );
 
+/**
+ * ================================
+ * HR / Admin Routes
+ * ================================
+ */
+
+// Fetch all scores for an interview
+router.get(
+  "/:interviewId/scores",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "view", false),
+  fetchInterviewScores
+);
+
+// HR action
+router.post(
+  "/:interviewId/lock",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "new", false),
+  lockInterviewScores
+);
 module.exports = router;

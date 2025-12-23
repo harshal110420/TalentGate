@@ -7,6 +7,8 @@ const {
   getCandidatesOverview,
   createInterview,
   rescheduleInterview,
+  getMyInterviews,
+  getAllInterviews,
 } = require("../../controller/HR_controllers/interviewController");
 
 router.get(
@@ -19,7 +21,7 @@ router.get(
 router.post(
   "/schedule",
   authMiddleware,
-  checkPermissionUnified(MENU_CODE, "create", false),
+  checkPermissionUnified(MENU_CODE, "new", false),
   createInterview
 );
 
@@ -28,6 +30,20 @@ router.post(
   authMiddleware,
   checkPermissionUnified(MENU_CODE, "edit", false),
   rescheduleInterview
+);
+
+router.get(
+  "/my",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "view", false),
+  getMyInterviews
+);
+
+router.get(
+  "/all",
+  authMiddleware,
+  checkPermissionUnified(MENU_CODE, "view", false),
+  getAllInterviews
 );
 
 module.exports = router;

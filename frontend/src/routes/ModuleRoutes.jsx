@@ -39,10 +39,11 @@ import UserPermissionWrapper from "../pages/Administration/User/UserPermissionWr
 import JobOpeningPage from "../pages/HumanResource/JobOpening/jobOpeningPage";
 import JobOpeningForm from "../pages/HumanResource/JobOpening/JobOpeningForm";
 import JobDetails from "../pages/HumanResource/JobOpening/JobDetails";
-import InterviewPage from "../pages/HumanResource/Interview/InterviewPage";
-import InterviewForm from "../pages/HumanResource/Interview/InterviewForm";
-import InterviewDetails from "../pages/HumanResource/Interview/InterviewDetails";
+import MyInterviews from "../pages/HumanResource/Interview/MyInterviews";
+import AllInterviews from "../pages/HumanResource/Interview/AllInterviews";
 import CandidatesOverviewPage from "../pages/HumanResource/Interview/InterviewPage";
+import InterviewScoreReview from "../pages/HumanResource/Interview/InterviewScoreReview";
+import InterviewScoreForm from "../pages/HumanResource/Interview/InterviewScoreForm";
 const ModuleRoutes = ({ moduleName }) => {
   const location = useLocation();
   const dispatch = useDispatch();
@@ -290,11 +291,27 @@ const ModuleRoutes = ({ moduleName }) => {
           return (
             <>
               <Route path="interview_management" element={<CandidatesOverviewPage />} />
-              <Route path="interview_management/create" element={<InterviewForm />} />
-              <Route path="interview_management/update/:id" element={<InterviewForm />} />
-              <Route path="interview_management/view/:id" element={<InterviewDetails />} />
+              <Route path="interview_management/my" element={<MyInterviews />} />
+              <Route path="interview_management/all" element={<AllInterviews />} />
             </>
 
+          );
+
+        case "Interview Evaluation":
+          return (
+            <>
+              <Route path="interview_evaluation/my" element={<MyInterviews />} />
+              <Route path="interview_evaluation" element={<AllInterviews />} />
+              <Route path="interview_evaluation/review/:interviewId" element={<InterviewScoreReview />} />
+            </>
+          );
+
+        case "Assigned Interviews":
+          return (
+            <>
+              <Route path="assigned_interviews" element={<MyInterviews />} />
+              <Route path="assigned_interviews/enter-score/:interviewId" element={<InterviewScoreForm />} />
+            </>
           );
 
         default:

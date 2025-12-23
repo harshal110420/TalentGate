@@ -219,10 +219,16 @@ Interview.hasMany(InterviewScore, { foreignKey: "interviewId" });
 InterviewScore.belongsTo(Interview, { foreignKey: "interviewId" });
 
 User.hasMany(InterviewScore, { foreignKey: "interviewerId" });
-InterviewScore.belongsTo(User, { foreignKey: "interviewerId" });
+InterviewScore.belongsTo(User, {
+  as: "interviewer",
+  foreignKey: "interviewerId",
+});
 
 Candidate.hasMany(InterviewScore, { foreignKey: "candidateId" });
-InterviewScore.belongsTo(Candidate, { foreignKey: "candidateId" });
+InterviewScore.belongsTo(Candidate, {
+  as: "candidate",
+  foreignKey: "candidateId",
+});
 
 // ==============================
 // 🔗 AUTO-ASSOCIATE (IF AVAILABLE)

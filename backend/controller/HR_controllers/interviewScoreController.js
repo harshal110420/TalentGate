@@ -1,68 +1,29 @@
 const asyncHandler = require("express-async-handler");
 const { DashMatrixDB } = require("../../models");
-const { InterviewScore, Interview, Candidate } = DashMatrixDB;
+const { InterviewScore, Interview, Candidate, User } = DashMatrixDB;
 
-// Submit or update interview score
-const submitInterviewScore = asyncHandler(async (req, res) => {
+const saveDraftScore = asyncHandler(async (req, res) => {
   const { interviewId } = req.params;
-  const interviewerId = req.user.id; // from auth middleware
-  const {
-    score,
-    recommendation,
-    strengths,
-    weaknesses,
-    comments,
-    submit = false, // flag to indicate final submission
-  } = req.body;
+  const interviewerId = req.user.id;
 
-  // 1️⃣ Validate score if submitting
-  if (submit && (score === undefined || score < 0 || score > 10)) {
-    return res.status(400).json({
-      message: "Score must be between 0 and 10.",
-    });
-  }
+  const { score, recommendation, strengths, weaknesses, comments } = req.body;
 
-  // 2️⃣ Fetch interview
   const interview = await Interview.findByPk(interviewId);
   if (!interview) {
     return res.status(404).json({ message: "Interview not found." });
   }
 
-  // 3️⃣ Ensure interview is completed before final submission
-  if (submit) {
-    // 1️⃣ Mark interview completed
-    if (interview.status !== "Completed") {
-      await interview.update({
-        status: "Completed",
-        completedAt: new Date(),
-      });
-    }
-
-    // 2️⃣ Update candidate application stage
-    const candidate = await Candidate.findByPk(interview.candidateId);
-
-    if (candidate && candidate.applicationStage !== "Interview Completed") {
-      await candidate.update({
-        applicationStage: "Interview Completed",
-        interviewCompletedAt: new Date(),
-      });
-    }
-  }
-
-  // 4️⃣ Check existing score
   let interviewScore = await InterviewScore.findOne({
     where: { interviewId, interviewerId },
   });
 
-  // 5️⃣ If already submitted, prevent updates
-  if (interviewScore?.status === "Submitted" && submit) {
+  if (interviewScore && interviewScore.status !== "Draft") {
     return res.status(409).json({
-      message: "Score already submitted and cannot be updated.",
+      message: "Submitted score cannot be edited.",
     });
   }
 
-  // 6️⃣ Prepare payload
-  const scorePayload = {
+  const payload = {
     interviewId,
     interviewerId,
     candidateId: interview.candidateId,
@@ -72,122 +33,171 @@ const submitInterviewScore = asyncHandler(async (req, res) => {
     strengths,
     weaknesses,
     comments,
-    status: submit ? "Submitted" : "Draft",
-    submittedAt: submit ? new Date() : null,
+    status: "Draft",
   };
 
-  // 7️⃣ Create or update
-  if (interviewScore) {
-    interviewScore = await interviewScore.update(scorePayload);
-  } else {
-    interviewScore = await InterviewScore.create(scorePayload);
-  }
+  interviewScore = interviewScore
+    ? await interviewScore.update(payload)
+    : await InterviewScore.create(payload);
 
-  return res.status(201).json({
-    message: submit
-      ? "Interview score submitted successfully."
-      : "Interview score saved as draft.",
+  res.status(200).json({
+    message: "Draft saved successfully.",
     data: interviewScore,
   });
 });
 
-// GET /api/interviews/:interviewId/scores
+const submitInterviewScore = asyncHandler(async (req, res) => {
+  const { interviewId } = req.params;
+  const interviewerId = req.user.id;
+
+  const { score, recommendation, strengths, weaknesses, comments } = req.body;
+
+  // Strict validation
+  if (score === undefined || score < 0 || score > 10) {
+    return res.status(400).json({
+      message: "Score must be between 0 and 10.",
+    });
+  }
+
+  const interview = await Interview.findByPk(interviewId);
+  if (!interview) {
+    return res.status(404).json({ message: "Interview not found." });
+  }
+
+  let interviewScore = await InterviewScore.findOne({
+    where: { interviewId, interviewerId },
+  });
+
+  if (interviewScore?.status === "Submitted") {
+    return res.status(409).json({
+      message: "Score already submitted.",
+    });
+  }
+
+  const payload = {
+    interviewId,
+    interviewerId,
+    candidateId: interview.candidateId,
+    round: interview.round,
+    score,
+    recommendation,
+    strengths,
+    weaknesses,
+    comments,
+    status: "Submitted",
+    submittedAt: new Date(),
+  };
+
+  interviewScore = interviewScore
+    ? await interviewScore.update(payload)
+    : await InterviewScore.create(payload);
+
+  res.status(201).json({
+    message: "Interview score submitted successfully.",
+    data: interviewScore,
+  });
+});
+
+const fetchMyInterviewScore = asyncHandler(async (req, res) => {
+  const { interviewId } = req.params;
+  const interviewerId = req.user.id;
+
+  const interview = await Interview.findByPk(interviewId);
+  if (!interview) {
+    return res.status(404).json({ message: "Interview not found." });
+  }
+
+  const score = await InterviewScore.findOne({
+    where: { interviewId, interviewerId },
+  });
+
+  res.status(200).json({
+    message: "Your interview score fetched successfully.",
+    data: score || null,
+  });
+});
+
 const fetchInterviewScores = asyncHandler(async (req, res) => {
   const { interviewId } = req.params;
 
-  const interview = await Interview.findByPk(interviewId, {
-    include: [
-      {
-        model: Candidate,
-        as: "candidate",
-        attributes: ["id", "firstName", "lastName", "email"],
-      },
-    ],
-  });
-
+  const interview = await Interview.findByPk(interviewId);
   if (!interview) {
     return res.status(404).json({ message: "Interview not found." });
   }
 
   const scores = await InterviewScore.findAll({
     where: { interviewId },
+    order: [["createdAt", "ASC"]],
     include: [
       {
         model: User,
+        as: "interviewer",
+        attributes: ["id", "firstName", "lastName", "mail"],
+      },
+      {
+        model: Candidate,
+        as: "candidate",
         attributes: ["id", "name", "email"],
       },
     ],
-    order: [["createdAt", "ASC"]],
   });
-
-  // Map scores to include candidate info
-  const responseData = scores.map((s) => ({
-    ...s.toJSON(),
-    candidateName: interview.Candidate
-      ? `${interview.Candidate.firstName} ${interview.Candidate.lastName}`
-      : "—",
-    interviewType: interview.interviewType || "—",
-    startTime: interview.startTime,
-    endTime: interview.endTime,
-    interviewDate: interview.interviewDate,
-    round: interview.round,
-    status: interview.status,
-  }));
 
   res.status(200).json({
     message: "Interview scores fetched successfully.",
-    data: responseData,
+    data: scores,
   });
 });
 
-// GET /api/interviews/:interviewId/my-score
-const fetchMyInterviewScore = asyncHandler(async (req, res) => {
+/**
+ * 🔒 Lock Interview Scores (HR only)
+ * Rule:
+ * 1. All scores must be Submitted
+ * 2. Status -> Locked
+ */
+const lockInterviewScores = asyncHandler(async (req, res) => {
   const { interviewId } = req.params;
-  const interviewerId = req.user.id; // from auth middleware
 
-  // 1️⃣ Fetch interview without include to avoid join issues
-  const interview = await Interview.findByPk(interviewId);
+  // 1️⃣ Fetch all scores for interview
+  const scores = await InterviewScore.findAll({
+    where: { interviewId },
+  });
 
-  if (!interview) {
-    return res.status(404).json({ message: "Interview not found." });
-  }
-
-  // 2️⃣ Fetch candidate separately
-  let candidate = null;
-  if (interview.candidateId) {
-    candidate = await Candidate.findByPk(interview.candidateId, {
-      attributes: ["id", "name", "email"],
+  if (!scores.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No interview scores found.",
     });
   }
 
-  // 3️⃣ Fetch interview score for current user
-  const score = await InterviewScore.findOne({
-    where: { interviewId, interviewerId },
-  });
+  // 2️⃣ Ensure all are Submitted
+  const hasDraft = scores.some((s) => s.status !== "Submitted");
 
-  // 4️⃣ Prepare response safely
-  const responseData = {
-    // Spread score if it exists
-    ...(score ? score.toJSON() : {}),
-    // Candidate info
-    candidateName: candidate ? candidate.name : "—",
-    candidateEmail: candidate?.email || "—",
-    // Interview info
-    interviewType: interview.interviewType || "—",
-    startTime: interview.startTime || "—",
-    endTime: interview.endTime || "—",
-    interviewDate: interview.interviewDate || "—",
-    round: interview.round || "—",
-    status: interview.status || "—",
-  };
+  if (hasDraft) {
+    return res.status(400).json({
+      success: false,
+      message: "All interviewers must submit scores before locking.",
+    });
+  }
+
+  // 3️⃣ Lock all scores
+  await InterviewScore.update({ status: "Locked" }, { where: { interviewId } });
+
+  // 4️⃣ (Optional but recommended)
+  await Interview.update(
+    { status: "Completed" },
+    { where: { id: interviewId } }
+  );
+
   res.status(200).json({
-    message: "Your interview score fetched successfully.",
-    data: responseData,
+    success: true,
+    message: "Interview scores locked successfully.",
   });
 });
 
 module.exports = {
+  saveDraftScore,
   submitInterviewScore,
   fetchMyInterviewScore,
   fetchInterviewScores,
+  lockInterviewScores,
 };

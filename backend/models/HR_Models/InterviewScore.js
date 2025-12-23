@@ -33,7 +33,7 @@ module.exports = () => {
 
       score: {
         type: DataTypes.DECIMAL(5, 2), // e.g. 8.5 / 10
-        allowNull: false,
+        allowNull: true,
       },
 
       recommendation: {
@@ -55,9 +55,9 @@ module.exports = () => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      
+
       status: {
-        type: DataTypes.ENUM("Draft", "Submitted"),
+        type: DataTypes.ENUM("Draft", "Submitted", "Locked"),
         defaultValue: "Draft",
       },
 
