@@ -136,10 +136,8 @@ const getCandidatesOverview = asyncHandler(async (req, res) => {
           "startTime",
           "endTime",
         ],
-        where: {
-          status: "Scheduled",
-        },
         required: false,
+        separate: true,
         limit: 1,
         order: [["createdAt", "DESC"]],
       },
@@ -159,129 +157,140 @@ const getCandidatesOverview = asyncHandler(async (req, res) => {
 
 // -------------------- CREATE INTERVIEW --------------------
 
-const createInterview = async (req, res) => {
-  try {
-    const {
-      candidateId,
-      jobId,
-      round,
-      interviewType,
-      interviewDate,
-      startTime,
-      endTime,
-      status,
-      meetingLink,
-      location,
-      notes,
-      panel, // [{ userId, role }]
-    } = req.body;
+const createInterview = asyncHandler(async (req, res) => {
+  const {
+    candidateId,
+    jobId,
+    round,
+    interviewType,
+    interviewDate,
+    startTime,
+    endTime,
+    status,
+    meetingLink,
+    location,
+    notes,
+    panel, // [{ userId, role }]
+  } = req.body;
 
-    const createdBy = req.user.id; // 🔐 Always from token
+  const createdBy = req.user.id; // from auth token
 
-    // =============================
-    // BASIC VALIDATION
-    // =============================
-    if (
-      !candidateId ||
-      !jobId ||
-      !round ||
-      !interviewDate ||
-      !startTime ||
-      !endTime
-    ) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
+  // =============================
+  // BASIC VALIDATION
+  // =============================
+  if (
+    !candidateId ||
+    !jobId ||
+    !round ||
+    !interviewDate ||
+    !startTime ||
+    !endTime
+  ) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
 
-    // =============================
-    // CANDIDATE VALIDATION
-    // =============================
-    const candidate = await Candidate.findByPk(candidateId);
+  // =============================
+  // FETCH CANDIDATE
+  // =============================
+  const candidate = await Candidate.findByPk(candidateId);
 
-    if (!candidate) {
-      return res.status(404).json({ message: "Candidate not found" });
-    }
+  if (!candidate) {
+    return res.status(404).json({ message: "Candidate not found" });
+  }
 
-    if (candidate.applicationStage !== "Shortlisted for Interview") {
-      return res.status(400).json({
-        message:
-          "Candidate is not eligible for interview. Stage must be 'Shortlisted for Interview'.",
-      });
-    }
-
-    // =============================
-    // CREATE INTERVIEW
-    // =============================
-    const interview = await Interview.create({
-      candidateId,
-      jobId,
-      round,
-      interviewType: interviewType || "Online",
-      interviewDate,
-      startTime,
-      endTime,
-      status: status || "Scheduled",
-      meetingLink,
-      location,
-      notes,
-      createdBy,
-    });
-
-    // =============================
-    // UPDATE CANDIDATE STAGE
-    // =============================
-    await candidate.update({
-      applicationStage: "Interview Scheduled",
-      interviewScheduledAt: new Date(),
-    });
-
-    // =============================
-    // PANEL VALIDATION + INSERT
-    // =============================
-    if (panel && Array.isArray(panel) && panel.length > 0) {
-      const allowedRoles = ["Lead", "Panelist", "Observer"];
-
-      const userIds = panel.map((p) => p.userId);
-
-      // Fetch valid users
-      const users = await User.findAll({
-        where: { id: userIds },
-        attributes: ["id"],
-      });
-
-      const validUserIds = users.map((u) => u.id);
-
-      // Check invalid users
-      const invalidUsers = userIds.filter((id) => !validUserIds.includes(id));
-
-      if (invalidUsers.length > 0) {
-        return res.status(400).json({
-          message: "Invalid panel members found",
-          invalidUsers,
-        });
-      }
-
-      const panelData = panel.map((p) => ({
-        interviewId: interview.id,
-        userId: p.userId,
-        role: allowedRoles.includes(p.role) ? p.role : "Panelist",
-        addedBy: createdBy,
-      }));
-
-      await InterviewPanel.bulkCreate(panelData);
-    }
-
-    return res.status(201).json({
-      message: "Interview created successfully",
-      interviewId: interview.id,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message,
+  // =============================
+  // ELIGIBILITY CHECK (FINAL LOGIC)
+  // =============================
+  if (
+    candidate.applicationStage === "Rejected" ||
+    candidate.applicationStage === "Hired"
+  ) {
+    return res.status(400).json({
+      message: "Cannot schedule interview for this candidate",
     });
   }
-};
+
+  // =============================
+  // BLOCK MULTIPLE ACTIVE INTERVIEWS
+  // =============================
+  const activeInterview = await Interview.findOne({
+    where: {
+      candidateId,
+      status: "Scheduled",
+    },
+  });
+
+  if (activeInterview) {
+    return res.status(400).json({
+      message: "Candidate already has a scheduled interview",
+    });
+  }
+
+  // =============================
+  // CREATE INTERVIEW
+  // =============================
+  const interview = await Interview.create({
+    candidateId,
+    jobId,
+    round,
+    interviewType: interviewType || "Online",
+    interviewDate,
+    startTime,
+    endTime,
+    status: status || "Scheduled",
+    meetingLink,
+    location,
+    notes,
+    createdBy,
+  });
+
+  // =============================
+  // UPDATE CANDIDATE STAGE
+  // =============================
+  await candidate.update({
+    applicationStage: "Interview Scheduled",
+    interviewScheduledAt: new Date(),
+  });
+
+  // =============================
+  // PANEL MEMBERS (OPTIONAL)
+  // =============================
+  if (panel && Array.isArray(panel) && panel.length > 0) {
+    const allowedRoles = ["Lead", "Panelist", "Observer"];
+
+    const userIds = panel.map((p) => p.userId);
+
+    const users = await User.findAll({
+      where: { id: userIds },
+      attributes: ["id"],
+    });
+
+    const validUserIds = users.map((u) => u.id);
+
+    const invalidUsers = userIds.filter((id) => !validUserIds.includes(id));
+
+    if (invalidUsers.length > 0) {
+      return res.status(400).json({
+        message: "Invalid panel members found",
+        invalidUsers,
+      });
+    }
+
+    const panelData = panel.map((p) => ({
+      interviewId: interview.id,
+      userId: p.userId,
+      role: allowedRoles.includes(p.role) ? p.role : "Panelist",
+      addedBy: createdBy,
+    }));
+
+    await InterviewPanel.bulkCreate(panelData);
+  }
+
+  return res.status(201).json({
+    message: "Interview scheduled successfully",
+    interviewId: interview.id,
+  });
+});
 
 // -------------------- RESCHEDULE INTERVIEW --------------------
 
@@ -297,7 +306,9 @@ const rescheduleInterview = asyncHandler(async (req, res) => {
     notes,
   } = req.body;
 
-  // 1️⃣ Fetch old interview
+  // =============================
+  // FETCH OLD INTERVIEW
+  // =============================
   const oldInterview = await Interview.findByPk(interviewId);
 
   if (!oldInterview) {
@@ -310,11 +321,14 @@ const rescheduleInterview = asyncHandler(async (req, res) => {
     });
   }
 
-  // 2️⃣ Mark old interview as Rescheduled
-  oldInterview.status = "Rescheduled";
-  await oldInterview.save();
+  // =============================
+  // MARK OLD AS RESCHEDULED
+  // =============================
+  await oldInterview.update({ status: "Rescheduled" });
 
-  // 3️⃣ Create new interview
+  // =============================
+  // CREATE NEW INTERVIEW
+  // =============================
   const newInterview = await Interview.create({
     candidateId: oldInterview.candidateId,
     jobId: oldInterview.jobId,
@@ -326,12 +340,14 @@ const rescheduleInterview = asyncHandler(async (req, res) => {
     meetingLink,
     location,
     notes,
-    createdBy: req.user.id, // HR
+    createdBy: req.user.id,
     status: "Scheduled",
     rescheduledFromId: oldInterview.id,
   });
 
-  // 4️⃣ Update candidate stage
+  // =============================
+  // UPDATE CANDIDATE STAGE
+  // =============================
   await Candidate.update(
     {
       applicationStage: "Interview Rescheduled",
@@ -341,7 +357,7 @@ const rescheduleInterview = asyncHandler(async (req, res) => {
     }
   );
 
-  res.json({
+  return res.json({
     message: "Interview rescheduled successfully",
     interview: newInterview,
   });

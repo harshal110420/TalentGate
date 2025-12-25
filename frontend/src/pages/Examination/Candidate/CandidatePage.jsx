@@ -340,6 +340,9 @@ const CandidatePage = () => {
     }
   };
 
+  const smallCuteBtn =
+    "w-full px-2 py-1 text-[12px] font-medium rounded-xl shadow-sm transition hover:scale-[1.02] active:scale-[0.98]";
+
   return (
     <div className="max-w-full px-5 py-5 font-sans text-gray-800 dark:text-gray-100">
       {/* Header */}
@@ -607,7 +610,7 @@ const CandidatePage = () => {
                         {c.applicationStage === "Applied" && (
                           <button
                             onClick={() => handleResumeReview(c.id)}
-                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1.5 rounded text-xs"
+                            className={`${smallCuteBtn} bg-yellow-500 hover:bg-yellow-600 text-white`}
                           >
                             Review Resume
                           </button>
@@ -617,7 +620,7 @@ const CandidatePage = () => {
                         {c.applicationStage === "Resume Reviewed" && (
                           <button
                             onClick={() => handleShortlistForExam(c.id)}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs"
+                            className={`${smallCuteBtn} bg-indigo-600 hover:bg-indigo-700 text-white`}
                           >
                             Shortlist for Exam
                           </button>
@@ -658,7 +661,7 @@ const CandidatePage = () => {
                           c.applicationStage === "Exam Completed" && (
                             <button
                               onClick={() => handleShortlistForInterview(c.id)}
-                              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs"
+                              className={`${smallCuteBtn} bg-purple-600 hover:bg-purple-700 text-white`}
                             >
                               Shortlist for Interview
                             </button>

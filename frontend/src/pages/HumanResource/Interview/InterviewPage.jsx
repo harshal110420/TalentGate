@@ -350,6 +350,36 @@ const CandidatesOverviewPage = () => {
     return `${hours ? `${hours}h ` : ""}${minutes}m`;
   };
 
+  const getInterviewInfo = (interviews = []) => {
+    if (!interviews.length) {
+      return {
+        activeInterview: null,
+        lastInterview: null,
+        canScheduleNext: true,
+      };
+    }
+
+    const activeInterview = interviews.find((i) =>
+      ["Scheduled", "Rescheduled"].includes(i.status)
+    );
+    console.log("Active Interview:", activeInterview)
+    const sorted = [...interviews].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    const lastInterview = sorted[0];
+    console.log("last Interview:", lastInterview)
+    return {
+      activeInterview,
+      lastInterview,
+      canScheduleNext: !activeInterview, // 🔥 key rule
+    };
+  };
+
+  const smallCuteBtn =
+    "w-full px-2 py-1 text-[12px] font-medium rounded-xl shadow-sm transition hover:scale-[1.02] active:scale-[0.98]";
+
+
 
 
   return (
@@ -445,6 +475,8 @@ const CandidatesOverviewPage = () => {
               <th className="px-4 py-3 text-left">Exam Result</th>
               <th className="px-4 py-3 text-left">Application Stage</th>
               <th className="px-4 py-3 text-left">Job </th>
+              <th className="px-4 py-3 text-left">Interview Status</th>
+              <th className="px-4 py-3 text-left">Interview Round</th>
               <th className="w-[160px] px-4 py-3 text-center sticky right-[110px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                 Quick Actions
               </th>
@@ -505,23 +537,80 @@ const CandidatesOverviewPage = () => {
                       </span>
                     </div>
                   </td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const { activeInterview, lastInterview } =
+                        getInterviewInfo(row.interviews);
+
+                      if (activeInterview) {
+                        return (
+                          <span className="text-yellow-600 font-semibold">
+                            {activeInterview.status}
+                          </span>
+                        );
+                      }
+
+                      if (lastInterview) {
+                        return (
+                          <span
+                            className={`font-semibold ${lastInterview.status === "Completed"
+                              ? "text-green-600"
+                              : "text-red-600"
+                              }`}
+                          >
+                            {lastInterview.status}
+                          </span>
+                        );
+                      }
+
+                      return <span className="text-gray-400">Not Started</span>;
+                    })()}
+                  </td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const { activeInterview, lastInterview } =
+                        getInterviewInfo(row.interviews);
+
+                      return (
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {activeInterview?.round ||
+                            lastInterview?.round ||
+                            "-"}
+                        </span>
+                      );
+                    })()}
+                  </td>
+
 
                   <td className="w-[160px] px-4 py-2 text-center sticky right-[110px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                     <div className="flex flex-col items-center gap-2">
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
 
                         {/* ===== SCHEDULE ===== */}
-                        {row.applicationStage === "Shortlisted for Interview" && (
-                          <button
-                            onClick={() => {
-                              setSelectedInterviewCandidate(row);
-                              setInterviewModalOpen(true);
-                            }}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white px-2 py-1.5 rounded text-xs"
-                          >
-                            Schedule Interview
-                          </button>
-                        )}
+                        {(() => {
+                          const { canScheduleNext, lastInterview } = getInterviewInfo(row.interviews);
+
+                          // text decide karna
+                          const scheduleLabel = lastInterview ? "Schedule Next Interview" : "Schedule Interview";
+
+                          return (
+                            canScheduleNext &&
+                            row.applicationStage !== "Selected" &&
+                            row.applicationStage !== "Hired" &&
+                            row.applicationStage !== "Rejected" && (
+                              <button
+                                onClick={() => {
+                                  setSelectedInterviewCandidate(row);
+                                  setInterviewModalOpen(true);
+                                }}
+                                className={`${smallCuteBtn} bg-teal-600 hover:bg-teal-700 text-white`}
+                              >
+                                {scheduleLabel}
+                              </button>
+                            )
+                          );
+                        })()}
+
 
                         {/* ===== RESCHEDULE ===== */}
                         {row.applicationStage === "Interview Scheduled" && (
@@ -530,7 +619,7 @@ const CandidatesOverviewPage = () => {
                               setSelectedRescheduleInterview(row.interviews?.[0]);
                               setRescheduleModalOpen(true);
                             }}
-                            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1.5 rounded text-xs"
+                            className={`${smallCuteBtn} bg-yellow-600 hover:bg-yellow-700 text-white`}
                           >
                             Reschedule
                           </button>
@@ -543,27 +632,41 @@ const CandidatesOverviewPage = () => {
                               onClick={() =>
                                 handleInterviewCompleted(row.interviews?.[0]?.id)
                               }
-                              className="w-full bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded text-xs"
+                              className={`${smallCuteBtn} bg-green-600 hover:bg-green-700 text-white`}
                             >
                               Mark Completed
                             </button>
                           )}
 
                         {/* ===== SELECT ===== */}
-                        {row.applicationStage === "Interview Completed" && (
-                          <button
-                            onClick={() => handleSelectCandidate(row.id)}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs"
-                          >
-                            Select Candidate
-                          </button>
-                        )}
+                        {(() => {
+                          const { lastInterview } = getInterviewInfo(row.interviews);
+
+                          return (
+                            lastInterview &&
+                            (lastInterview.round === "HR" ||
+                              lastInterview.round === "Managerial" ||
+                              lastInterview.round === "Technical") &&
+                            lastInterview.status === "Completed" &&
+                            row.applicationStage !== "Selected" &&  // <-- add this line
+                            (
+                              <button
+                                onClick={() => handleSelectCandidate(row.id)}
+                                className={`${smallCuteBtn} bg-indigo-600 hover:bg-indigo-700 text-white`}
+                              >
+                                Select Candidate
+                              </button>
+                            )
+                          );
+                        })()}
+
+
 
                         {/* ===== HIRE ===== */}
                         {row.applicationStage === "Selected" && (
                           <button
                             onClick={() => openHireModal(row.id)}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded text-xs"
+                            className={`${smallCuteBtn} bg-emerald-600 hover:bg-emerald-700 text-white`}
                           >
                             Hire
                           </button>
@@ -615,606 +718,616 @@ const CandidatesOverviewPage = () => {
         </table>
       </div>
       {/* ===== Reject Modal ===== */}
-      {rejectModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+      {
+        rejectModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
 
-          <div className="bg-white rounded-lg p-6 w-[400px]">
-            <h3 className="text-lg font-semibold mb-4">Reject Candidate</h3>
+            <div className="bg-white rounded-lg p-6 w-[400px]">
+              <h3 className="text-lg font-semibold mb-4">Reject Candidate</h3>
 
-            <p className="text-sm text-gray-600 mb-2">
-              Please enter rejection reason for:
-              <b> {selectedRejectCandidate?.name}</b>
-            </p>
+              <p className="text-sm text-gray-600 mb-2">
+                Please enter rejection reason for:
+                <b> {selectedRejectCandidate?.name}</b>
+              </p>
 
-            <textarea
-              rows={4}
-              value={rejectRemark}
-              onChange={(e) => setRejectRemark(e.target.value)}
-              className="w-full border rounded p-2 text-sm mb-3"
-              placeholder="Enter rejection reason"
-            />
+              <textarea
+                rows={4}
+                value={rejectRemark}
+                onChange={(e) => setRejectRemark(e.target.value)}
+                className="w-full border rounded p-2 text-sm mb-3"
+                placeholder="Enter rejection reason"
+              />
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setRejectModalOpen(false);
-                  setRejectRemark("");
-                  setSelectedRejectCandidate(null);
-                }}
-                className="px-3 py-1 border rounded text-sm"
-              >
-                Cancel
-              </button>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setRejectModalOpen(false);
+                    setRejectRemark("");
+                    setSelectedRejectCandidate(null);
+                  }}
+                  className="px-3 py-1 border rounded text-sm"
+                >
+                  Cancel
+                </button>
 
-              <button
-                onClick={handleRejectCandidate}
-                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
-              >
-                Reject
-              </button>
+                <button
+                  onClick={handleRejectCandidate}
+                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                >
+                  Reject
+                </button>
+              </div>
             </div>
-          </div>
 
-        </div>
-      )}
+          </div>
+        )
+      }
 
       {/* ===== Hire Modal ===== */}
-      {showHireModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-5 w-[320px]">
-            <h3 className="text-lg font-semibold mb-3">Confirm Hiring</h3>
+      {
+        showHireModal && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-5 w-[320px]">
+              <h3 className="text-lg font-semibold mb-3">Confirm Hiring</h3>
 
-            <input
-              type="date"
-              value={joiningDate}
-              onChange={(e) => setJoiningDate(e.target.value)}
-              className="w-full border px-3 py-2 mb-3 rounded"
-            />
+              <input
+                type="date"
+                value={joiningDate}
+                onChange={(e) => setJoiningDate(e.target.value)}
+                className="w-full border px-3 py-2 mb-3 rounded"
+              />
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowHireModal(false)}
-                className="border px-3 py-1 rounded"
-              >
-                Cancel
-              </button>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowHireModal(false)}
+                  className="border px-3 py-1 rounded"
+                >
+                  Cancel
+                </button>
 
-              <button
-                onClick={submitHiring}
-                className="bg-emerald-600 text-white px-3 py-1 rounded"
-              >
-                Confirm
-              </button>
+                <button
+                  onClick={submitHiring}
+                  className="bg-emerald-600 text-white px-3 py-1 rounded"
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* ===== Interview Scheduling Modal ===== */}
-      {interviewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+      {
+        interviewModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
 
-            {/* ===== HEADER ===== */}
-            <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-                Schedule Interview — {selectedInterviewCandidate?.name}
-              </h2>
-              <button
-                onClick={() => setInterviewModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* ===== BODY ===== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 overflow-y-auto">
-
-              {/* ---------------- LEFT : DATE ---------------- */}
-              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
-                <h4 className="text-sm font-semibold uppercase  mb-3 text-gray-700">
-                  Select Interview Date
-                </h4>
-
-                <CustomCalendar
-                  selectedDate={interviewForm.interviewDate}
-                  onSelect={(date) =>
-                    setInterviewForm({ ...interviewForm, interviewDate: date })
-                  }
-                />
-
-
-                <p className="text-xs text-gray-500 mt-2">
-                  Choose a suitable date for the interview
-                </p>
+              {/* ===== HEADER ===== */}
+              <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                  Schedule Interview — {selectedInterviewCandidate?.name}
+                </h2>
+                <button
+                  onClick={() => setInterviewModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 text-lg"
+                >
+                  ✕
+                </button>
               </div>
 
+              {/* ===== BODY ===== */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 overflow-y-auto">
 
-              {/* ---------------- RIGHT : DETAILS ---------------- */}
-              <div className="space-y-3">
-
-                {/* Round Type */}
-                <select
-                  value={interviewForm.round}
-                  onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, round: e.target.value })
-                  }
-                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 
-             border border-slate-300 focus:ring-2 focus:ring-teal-500 
-             focus:border-transparent outline-none"
-                >
-                  {/* ❌ Placeholder (select nahi hona chahiye) */}
-                  <option value="" disabled>
-                    Select interview round
-                  </option>
-
-                  {/* ✅ Actual options */}
-                  <option value="Technical">Technical Round</option>
-                  <option value="HR">HR Round</option>
-                  <option value="Managerial">Managerial Round</option>
-                </select>
-
-
-
-                {/* Time */}
-                {/* ---------------- TIME SLOT ---------------- */}
-                <div className="rounded-xl p-4 space-y-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                  <h4 className="text-sm font-semibold text-gray-700">
-                    Interview Time Slot
+                {/* ---------------- LEFT : DATE ---------------- */}
+                <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <h4 className="text-sm font-semibold uppercase  mb-3 text-gray-700">
+                    Select Interview Date
                   </h4>
 
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                    {/* Start Time */}
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Start Time
-                      </label>
-                      <input
-                        type="time"
-                        value={interviewForm.startTime}
-                        onChange={(e) =>
-                          setInterviewForm({
-                            ...interviewForm,
-                            startTime: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none"
-                      />
-                    </div>
-
-                    {/* Arrow */}
-                    <div className="mt-5 text-gray-400 text-lg">
-                      →
-                    </div>
-
-                    {/* End Time */}
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        End Time
-                      </label>
-                      <input
-                        type="time"
-                        value={interviewForm.endTime}
-                        onChange={(e) =>
-                          setInterviewForm({
-                            ...interviewForm,
-                            endTime: e.target.value,
-                          })
-                        }
-                        className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Duration (future-ready) */}
-                  {interviewForm.startTime && interviewForm.endTime && (
-                    <p className="text-xs text-gray-600">
-                      Duration:{" "}
-                      <span className="font-medium">
-                        {calculateDuration(
-                          interviewForm.startTime,
-                          interviewForm.endTime
-                        )}
-                      </span>
-                    </p>
-                  )}
-                </div>
-
-
-                {/* Mode */}
-                <select
-                  value={interviewForm.interviewType}
-                  onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, interviewType: e.target.value })
-                  }
-                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-
-                >
-                  <option value="">Select Mode</option>
-                  <option value="Online">Online</option>
-                  <option value="Offline">Offline</option>
-                  <option value="Telephonic">Telephonic</option>
-                </select>
-
-
-                {/* Location / Link */}
-                <input
-                  placeholder="Interview Location or Meeting Link"
-                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-                  value={interviewForm.locationOrLink}
-                  onChange={(e) =>
-                    setInterviewForm({
-                      ...interviewForm,
-                      locationOrLink: e.target.value,
-                    })
-                  }
-                />
-
-
-                {/* ===== Interview Panel ===== */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 block">
-                    Interview Panel
-                    <span className="ml-1 text-xs text-gray-400">(Select interviewers)</span>
-                  </label>
-
-                  {/* Multi-select dropdown */}
-                  <Select
-                    isMulti
-                    options={panelOptions}
-                    placeholder="Search and select panel members..."
-                    value={panelOptions.filter((opt) =>
-                      interviewForm.panel.some((p) => p.userId === opt.value)
-                    )}
-                    onChange={(selectedOptions) => {
-                      setInterviewForm({
-                        ...interviewForm,
-                        panel: selectedOptions.map((opt, index) => {
-                          const existing = interviewForm.panel.find(
-                            (p) => p.userId === opt.value
-                          );
-
-                          return (
-                            existing || {
-                              userId: opt.value,
-                              role: index === 0 ? "Lead" : "Panelist",
-                            }
-                          );
-                        }),
-                      });
-                    }}
-                    className="react-select-container text-sm"
-                    classNamePrefix="react-select"
+                  <CustomCalendar
+                    selectedDate={interviewForm.interviewDate}
+                    onSelect={(date) =>
+                      setInterviewForm({ ...interviewForm, interviewDate: date })
+                    }
                   />
 
-                  {/* Selected panel list */}
-                  {interviewForm.panel.length > 0 && (
-                    <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-2">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Assigned Panel Members
-                      </p>
 
-                      {interviewForm.panel.map((member) => {
-                        const user = userList.find((u) => u.id === member.userId);
-
-                        return (
-                          <div
-                            key={member.userId}
-                            className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2 hover:shadow-sm transition"
-                          >
-                            {/* Name */}
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium text-gray-800">
-                                {user?.firstName} {user?.lastName}
-                              </span>
-                              <span className="text-xs text-gray-400">
-                                Interview Panel
-                              </span>
-                            </div>
-
-                            {/* Role selector */}
-                            <select
-                              value={member.role}
-                              onChange={(e) => {
-                                setInterviewForm({
-                                  ...interviewForm,
-                                  panel: interviewForm.panel.map((p) =>
-                                    p.userId === member.userId
-                                      ? { ...p, role: e.target.value }
-                                      : p
-                                  ),
-                                });
-                              }}
-                              className="text-sm rounded-md border border-gray-300 bg-white px-2 py-1
-                         focus:outline-none focus:ring-2 focus:ring-teal-500"
-                            >
-                              <option value="Lead">Lead Interviewer</option>
-                              <option value="Panelist">Panelist</option>
-                              <option value="Observer">Observer</option>
-                            </select>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Choose a suitable date for the interview
+                  </p>
                 </div>
 
-                {/* Remarks */}
-                <textarea
-                  rows={3}
-                  placeholder="Remarks (optional)"
-                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
-                  value={interviewForm.notes}
-                  onChange={(e) =>
-                    setInterviewForm({ ...interviewForm, notes: e.target.value })
-                  }
-                />
 
-              </div>
-            </div>
+                {/* ---------------- RIGHT : DETAILS ---------------- */}
+                <div className="space-y-3">
 
-            {/* ===== FOOTER ===== */}
-            <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800">
-              <button
-                onClick={() => setInterviewModalOpen(false)}
-                className="px-5 py-2 text-sm border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"              >
-                Cancel
-              </button>
+                  {/* Round Type */}
+                  <select
+                    value={interviewForm.round}
+                    onChange={(e) =>
+                      setInterviewForm({ ...interviewForm, round: e.target.value })
+                    }
+                    className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 
+             border border-slate-300 focus:ring-2 focus:ring-teal-500 
+             focus:border-transparent outline-none"
+                  >
+                    {/* ❌ Placeholder (select nahi hona chahiye) */}
+                    <option value="" disabled>
+                      Select interview round
+                    </option>
 
-              <button
-                onClick={handleScheduleInterview}
-                className="px-5 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-lg"              >
-                Schedule Interview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                    {/* ✅ Actual options */}
+                    <option value="Technical">Technical Round</option>
+                    <option value="HR">HR Round</option>
+                    <option value="Managerial">Managerial Round</option>
+                  </select>
 
-      {/* ===== Interview Cancel Modal ===== */}
-      {cancelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-900 w-[420px] rounded-xl shadow-xl p-6">
 
-            {/* Header */}
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                Cancel Interview
-              </h3>
-              <button
-                onClick={() => {
-                  setCancelModalOpen(false);
-                  setCancelReason("");
-                  setSelectedInterviewId(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 text-lg"
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* Info */}
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-              Please provide a reason for cancelling this interview. This action
-              cannot be undone.
-            </p>
+                  {/* Time */}
+                  {/* ---------------- TIME SLOT ---------------- */}
+                  <div className="rounded-xl p-4 space-y-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <h4 className="text-sm font-semibold text-gray-700">
+                      Interview Time Slot
+                    </h4>
 
-            {/* Textarea */}
-            <textarea
-              rows={4}
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Eg: Candidate unavailable, interviewer unavailable..."
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 
-                   bg-white dark:bg-slate-800 px-3 py-2 text-sm 
-                   focus:ring-2 focus:ring-red-500 outline-none"
-            />
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                      {/* Start Time */}
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">
+                          Start Time
+                        </label>
+                        <input
+                          type="time"
+                          value={interviewForm.startTime}
+                          onChange={(e) =>
+                            setInterviewForm({
+                              ...interviewForm,
+                              startTime: e.target.value,
+                            })
+                          }
+                          className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none"
+                        />
+                      </div>
 
-            {/* Footer */}
-            <div className="flex justify-end gap-3 mt-5">
-              <button
-                onClick={() => {
-                  setCancelModalOpen(false);
-                  setCancelReason("");
-                  setSelectedInterviewId(null);
-                }}
-                className="px-4 py-2 text-sm rounded-lg border border-slate-300 
-                     text-slate-600 hover:bg-slate-100"
-              >
-                Close
-              </button>
+                      {/* Arrow */}
+                      <div className="mt-5 text-gray-400 text-lg">
+                        →
+                      </div>
 
-              <button
-                onClick={handleCancelInterview}
-                className="px-4 py-2 text-sm rounded-lg 
-                     bg-red-600 hover:bg-red-700 text-white"
-              >
-                Confirm Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== Interview Rescheduling Modal ===== */}
-      {rescheduleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-
-            {/* ===== HEADER ===== */}
-            <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
-              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-                Reschedule Interview
-              </h2>
-
-              <button
-                onClick={() => {
-                  setRescheduleModalOpen(false);
-                  setSelectedRescheduleInterview(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* ===== BODY ===== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 overflow-y-auto">
-
-              {/* ================= LEFT : CALENDAR ================= */}
-              <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
-                <h4 className="text-sm font-semibold uppercase mb-3 text-gray-700">
-                  Select New Date
-                </h4>
-
-                <CustomCalendar
-                  selectedDate={interviewForm.interviewDate}
-                  onSelect={(date) =>
-                    setInterviewForm({
-                      ...interviewForm,
-                      interviewDate: date,
-                    })
-                  }
-                />
-
-                <p className="text-xs text-gray-500 mt-2">
-                  Choose a new interview date
-                </p>
-              </div>
-
-              {/* ================= RIGHT : DETAILS ================= */}
-              <div className="space-y-4">
-
-                {/* -------- TIME SLOT -------- */}
-                <div className="rounded-xl p-4 space-y-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                  <h4 className="text-sm font-semibold text-gray-700">
-                    New Time Slot
-                  </h4>
-
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                    {/* Start Time */}
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Start Time
-                      </label>
-                      <input
-                        type="time"
-                        value={interviewForm.startTime}
-                        onChange={(e) =>
-                          setInterviewForm({
-                            ...interviewForm,
-                            startTime: e.target.value,
-                          })
-                        }
-                        className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
-                    border border-slate-300 focus:ring-2 focus:ring-yellow-500 outline-none"
-                      />
+                      {/* End Time */}
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          value={interviewForm.endTime}
+                          onChange={(e) =>
+                            setInterviewForm({
+                              ...interviewForm,
+                              endTime: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+                        />
+                      </div>
                     </div>
 
-                    <div className="mt-5 text-gray-400 text-lg">→</div>
-
-                    {/* End Time */}
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        End Time
-                      </label>
-                      <input
-                        type="time"
-                        value={interviewForm.endTime}
-                        onChange={(e) =>
-                          setInterviewForm({
-                            ...interviewForm,
-                            endTime: e.target.value,
-                          })
-                        }
-                        className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
-                    border border-slate-300 focus:ring-2 focus:ring-yellow-500 outline-none"
-                      />
-                    </div>
+                    {/* Duration (future-ready) */}
+                    {interviewForm.startTime && interviewForm.endTime && (
+                      <p className="text-xs text-gray-600">
+                        Duration:{" "}
+                        <span className="font-medium">
+                          {calculateDuration(
+                            interviewForm.startTime,
+                            interviewForm.endTime
+                          )}
+                        </span>
+                      </p>
+                    )}
                   </div>
 
-                  {/* Duration */}
-                  {interviewForm.startTime && interviewForm.endTime && (
-                    <p className="text-xs text-gray-600">
-                      Duration:{" "}
-                      <span className="font-medium">
-                        {calculateDuration(
-                          interviewForm.startTime,
-                          interviewForm.endTime
-                        )}
-                      </span>
-                    </p>
-                  )}
-                </div>
 
-                {/* -------- NOTES -------- */}
-                <div>
-                  <label className="text-sm font-semibold text-gray-700 block mb-1">
-                    Reschedule Reason / Notes
-                  </label>
+                  {/* Mode */}
+                  <select
+                    value={interviewForm.interviewType}
+                    onChange={(e) =>
+                      setInterviewForm({ ...interviewForm, interviewType: e.target.value })
+                    }
+                    className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
 
-                  <textarea
-                    rows={3}
-                    placeholder="Mention reason for rescheduling (optional)"
-                    className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
-                border border-slate-300 focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none"
-                    value={interviewForm.notes}
+                  >
+                    <option value="">Select Mode</option>
+                    <option value="Online">Online</option>
+                    <option value="Offline">Offline</option>
+                    <option value="Telephonic">Telephonic</option>
+                  </select>
+
+
+                  {/* Location / Link */}
+                  <input
+                    placeholder="Interview Location or Meeting Link"
+                    className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+                    value={interviewForm.locationOrLink}
                     onChange={(e) =>
                       setInterviewForm({
                         ...interviewForm,
-                        notes: e.target.value,
+                        locationOrLink: e.target.value,
                       })
                     }
                   />
+
+
+                  {/* ===== Interview Panel ===== */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 block">
+                      Interview Panel
+                      <span className="ml-1 text-xs text-gray-400">(Select interviewers)</span>
+                    </label>
+
+                    {/* Multi-select dropdown */}
+                    <Select
+                      isMulti
+                      options={panelOptions}
+                      placeholder="Search and select panel members..."
+                      value={panelOptions.filter((opt) =>
+                        interviewForm.panel.some((p) => p.userId === opt.value)
+                      )}
+                      onChange={(selectedOptions) => {
+                        setInterviewForm({
+                          ...interviewForm,
+                          panel: selectedOptions.map((opt, index) => {
+                            const existing = interviewForm.panel.find(
+                              (p) => p.userId === opt.value
+                            );
+
+                            return (
+                              existing || {
+                                userId: opt.value,
+                                role: index === 0 ? "Lead" : "Panelist",
+                              }
+                            );
+                          }),
+                        });
+                      }}
+                      className="react-select-container text-sm"
+                      classNamePrefix="react-select"
+                    />
+
+                    {/* Selected panel list */}
+                    {interviewForm.panel.length > 0 && (
+                      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-2">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          Assigned Panel Members
+                        </p>
+
+                        {interviewForm.panel.map((member) => {
+                          const user = userList.find((u) => u.id === member.userId);
+
+                          return (
+                            <div
+                              key={member.userId}
+                              className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2 hover:shadow-sm transition"
+                            >
+                              {/* Name */}
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-gray-800">
+                                  {user?.firstName} {user?.lastName}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  Interview Panel
+                                </span>
+                              </div>
+
+                              {/* Role selector */}
+                              <select
+                                value={member.role}
+                                onChange={(e) => {
+                                  setInterviewForm({
+                                    ...interviewForm,
+                                    panel: interviewForm.panel.map((p) =>
+                                      p.userId === member.userId
+                                        ? { ...p, role: e.target.value }
+                                        : p
+                                    ),
+                                  });
+                                }}
+                                className="text-sm rounded-md border border-gray-300 bg-white px-2 py-1
+                         focus:outline-none focus:ring-2 focus:ring-teal-500"
+                              >
+                                <option value="Lead">Lead Interviewer</option>
+                                <option value="Panelist">Panelist</option>
+                                <option value="Observer">Observer</option>
+                              </select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Remarks */}
+                  <textarea
+                    rows={3}
+                    placeholder="Remarks (optional)"
+                    className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+                    value={interviewForm.notes}
+                    onChange={(e) =>
+                      setInterviewForm({ ...interviewForm, notes: e.target.value })
+                    }
+                  />
+
                 </div>
               </div>
-            </div>
 
-            {/* ===== FOOTER ===== */}
-            <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800">
-              <button
-                onClick={() => {
-                  setRescheduleModalOpen(false);
-                  setSelectedRescheduleInterview(null);
-                }}
-                className="px-5 py-2 text-sm border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Cancel
-              </button>
+              {/* ===== FOOTER ===== */}
+              <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800">
+                <button
+                  onClick={() => setInterviewModalOpen(false)}
+                  className="px-5 py-2 text-sm border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"              >
+                  Cancel
+                </button>
 
-              <button
-                onClick={async () => {
-                  try {
-                    await dispatch(
-                      rescheduleInterview({
-                        interviewId: selectedRescheduleInterview.id,
-                        payload: {
-                          interviewDate: interviewForm.interviewDate,
-                          startTime: interviewForm.startTime,
-                          endTime: interviewForm.endTime,
-                          notes: interviewForm.notes,
-                        },
-                      })
-                    ).unwrap();
-
-                    toast.success("Interview rescheduled successfully");
-                    dispatch(fetchCandidatesOverview());
-
-                    setRescheduleModalOpen(false);
-                    setSelectedRescheduleInterview(null);
-                  } catch (err) {
-                    toast.error(err);
-                  }
-                }}
-                className="px-5 py-2 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg"
-              >
-                Reschedule Interview
-              </button>
+                <button
+                  onClick={handleScheduleInterview}
+                  className="px-5 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-lg"              >
+                  Schedule Interview
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
+
+      {/* ===== Interview Cancel Modal ===== */}
+      {
+        cancelModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white dark:bg-slate-900 w-[420px] rounded-xl shadow-xl p-6">
+
+              {/* Header */}
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                  Cancel Interview
+                </h3>
+                <button
+                  onClick={() => {
+                    setCancelModalOpen(false);
+                    setCancelReason("");
+                    setSelectedInterviewId(null);
+                  }}
+                  className="text-slate-400 hover:text-slate-600 text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Info */}
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                Please provide a reason for cancelling this interview. This action
+                cannot be undone.
+              </p>
+
+              {/* Textarea */}
+              <textarea
+                rows={4}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Eg: Candidate unavailable, interviewer unavailable..."
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 
+                   bg-white dark:bg-slate-800 px-3 py-2 text-sm 
+                   focus:ring-2 focus:ring-red-500 outline-none"
+              />
+
+              {/* Footer */}
+              <div className="flex justify-end gap-3 mt-5">
+                <button
+                  onClick={() => {
+                    setCancelModalOpen(false);
+                    setCancelReason("");
+                    setSelectedInterviewId(null);
+                  }}
+                  className="px-4 py-2 text-sm rounded-lg border border-slate-300 
+                     text-slate-600 hover:bg-slate-100"
+                >
+                  Close
+                </button>
+
+                <button
+                  onClick={handleCancelInterview}
+                  className="px-4 py-2 text-sm rounded-lg 
+                     bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Confirm Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* ===== Interview Rescheduling Modal ===== */}
+      {
+        rescheduleModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+
+              {/* ===== HEADER ===== */}
+              <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                  Reschedule Interview
+                </h2>
+
+                <button
+                  onClick={() => {
+                    setRescheduleModalOpen(false);
+                    setSelectedRescheduleInterview(null);
+                  }}
+                  className="text-slate-400 hover:text-slate-600 text-lg"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* ===== BODY ===== */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 overflow-y-auto">
+
+                {/* ================= LEFT : CALENDAR ================= */}
+                <div className="rounded-xl p-4 bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <h4 className="text-sm font-semibold uppercase mb-3 text-gray-700">
+                    Select New Date
+                  </h4>
+
+                  <CustomCalendar
+                    selectedDate={interviewForm.interviewDate}
+                    onSelect={(date) =>
+                      setInterviewForm({
+                        ...interviewForm,
+                        interviewDate: date,
+                      })
+                    }
+                  />
+
+                  <p className="text-xs text-gray-500 mt-2">
+                    Choose a new interview date
+                  </p>
+                </div>
+
+                {/* ================= RIGHT : DETAILS ================= */}
+                <div className="space-y-4">
+
+                  {/* -------- TIME SLOT -------- */}
+                  <div className="rounded-xl p-4 space-y-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <h4 className="text-sm font-semibold text-gray-700">
+                      New Time Slot
+                    </h4>
+
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                      {/* Start Time */}
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">
+                          Start Time
+                        </label>
+                        <input
+                          type="time"
+                          value={interviewForm.startTime}
+                          onChange={(e) =>
+                            setInterviewForm({
+                              ...interviewForm,
+                              startTime: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
+                    border border-slate-300 focus:ring-2 focus:ring-yellow-500 outline-none"
+                        />
+                      </div>
+
+                      <div className="mt-5 text-gray-400 text-lg">→</div>
+
+                      {/* End Time */}
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          value={interviewForm.endTime}
+                          onChange={(e) =>
+                            setInterviewForm({
+                              ...interviewForm,
+                              endTime: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
+                    border border-slate-300 focus:ring-2 focus:ring-yellow-500 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Duration */}
+                    {interviewForm.startTime && interviewForm.endTime && (
+                      <p className="text-xs text-gray-600">
+                        Duration:{" "}
+                        <span className="font-medium">
+                          {calculateDuration(
+                            interviewForm.startTime,
+                            interviewForm.endTime
+                          )}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* -------- NOTES -------- */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 block mb-1">
+                      Reschedule Reason / Notes
+                    </label>
+
+                    <textarea
+                      rows={3}
+                      placeholder="Mention reason for rescheduling (optional)"
+                      className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900
+                border border-slate-300 focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none"
+                      value={interviewForm.notes}
+                      onChange={(e) =>
+                        setInterviewForm({
+                          ...interviewForm,
+                          notes: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ===== FOOTER ===== */}
+              <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800">
+                <button
+                  onClick={() => {
+                    setRescheduleModalOpen(false);
+                    setSelectedRescheduleInterview(null);
+                  }}
+                  className="px-5 py-2 text-sm border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await dispatch(
+                        rescheduleInterview({
+                          interviewId: selectedRescheduleInterview.id,
+                          payload: {
+                            interviewDate: interviewForm.interviewDate,
+                            startTime: interviewForm.startTime,
+                            endTime: interviewForm.endTime,
+                            notes: interviewForm.notes,
+                          },
+                        })
+                      ).unwrap();
+
+                      toast.success("Interview rescheduled successfully");
+                      dispatch(fetchCandidatesOverview());
+
+                      setRescheduleModalOpen(false);
+                      setSelectedRescheduleInterview(null);
+                    } catch (err) {
+                      toast.error(err);
+                    }
+                  }}
+                  className="px-5 py-2 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg"
+                >
+                  Reschedule Interview
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* -------------------------------- PAGINATION -------------------------------- */}
       <div className="mt-5 flex justify-center gap-2">
@@ -1231,7 +1344,7 @@ const CandidatesOverviewPage = () => {
           </button>
         ))}
       </div>
-    </div>
+    </div >
   );
 };
 

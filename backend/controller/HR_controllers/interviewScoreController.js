@@ -183,10 +183,10 @@ const lockInterviewScores = asyncHandler(async (req, res) => {
   await InterviewScore.update({ status: "Locked" }, { where: { interviewId } });
 
   // 4️⃣ (Optional but recommended)
-  await Interview.update(
-    { status: "Completed" },
-    { where: { id: interviewId } }
-  );
+  // await Interview.update(
+  //   { status: "Completed" },
+  //   { where: { id: interviewId } }
+  // );
 
   res.status(200).json({
     success: true,

@@ -64,17 +64,17 @@ const AllInterviews = () => {
                                     <div className="font-medium">
                                         {interview.candidate?.name}
                                     </div>
-                                    <div className="text-xs text-gray-500">
+                                    {/* <div className="text-xs text-gray-500">
                                         {interview.candidate?.email}
-                                    </div>
+                                    </div> */}
                                 </td>
 
                                 {/* Job */}
                                 <td className="px-4 py-3">
                                     <div>{interview.jobOpening?.title}</div>
-                                    <div className="text-xs text-gray-500">
+                                    {/* <div className="text-xs text-gray-500">
                                         {interview.jobOpening?.jobCode}
-                                    </div>
+                                    </div> */}
                                 </td>
 
                                 {/* Round */}
@@ -84,13 +84,29 @@ const AllInterviews = () => {
 
                                 {/* Date */}
                                 <td className="px-4 py-3 text-center">
-                                    {new Date(interview.interviewDate).toLocaleDateString()}
+                                    {new Date(interview.interviewDate).toLocaleDateString("en-GB", {
+                                        day: "2-digit",
+                                        month: "short",
+                                        year: "numeric"
+                                    })}
+
                                 </td>
 
                                 {/* Time */}
                                 <td className="px-4 py-3 text-center">
-                                    {interview.startTime} – {interview.endTime}
+                                    {new Date(`1970-01-01T${interview.startTime}`).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                    })}
+                                    {" – "}
+                                    {new Date(`1970-01-01T${interview.endTime}`).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                    })}
                                 </td>
+
 
                                 {/* Type */}
                                 <td className="px-4 py-3 text-center">
@@ -99,17 +115,32 @@ const AllInterviews = () => {
 
                                 {/* Panel */}
                                 <td className="px-4 py-3">
-                                    {interview.panel?.map((p) => (
-                                        <div key={p.id} className="text-xs">
-                                            <span className="font-medium">
-                                                {p.user?.firstName} {p.user?.lastName}
-                                            </span>
-                                            <span className="text-gray-500">
-                                                {" "}
-                                                ({p.role})
-                                            </span>
-                                        </div>
-                                    ))}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {interview.panel?.map((p) => {
+                                            const name = `${p.user?.firstName} ${p.user?.lastName}`;
+                                            return (
+                                                <div
+                                                    key={p.id}
+                                                    className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700
+                     px-2 py-0.5 rounded-full text-[10px] font-medium
+                     text-gray-700 dark:text-gray-200"
+                                                >
+                                                    {/* avatar initials */}
+                                                    <div className="w-5 h-5 flex items-center justify-center rounded-full 
+                          bg-gray-300 dark:bg-gray-600 text-[9px] font-semibold">
+                                                        {p.user?.firstName?.[0]}
+                                                        {p.user?.lastName?.[0]}
+                                                    </div>
+
+                                                    {/* name + role */}
+                                                    <span>{name}</span>
+                                                    <span className="text-gray-500 dark:text-gray-400 text-[9px]">
+                                                        ({p.role})
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </td>
 
                                 {/* Status */}
