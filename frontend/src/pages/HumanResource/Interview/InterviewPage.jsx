@@ -10,7 +10,7 @@ import { createInterview, rescheduleInterview } from "../../../features/Intervie
 import { fetchUsers } from "../../../features/users/userSlice";
 import Select from "react-select";
 import { UserRoundX } from "lucide-react";
-
+import { fetchAllInterviews } from "../../../features/HR_Slices/Interview/InterviewSlice";
 const CandidatesOverviewPage = () => {
   const dispatch = useDispatch();
 
@@ -58,7 +58,8 @@ const CandidatesOverviewPage = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [selectedRescheduleInterview, setSelectedRescheduleInterview] = useState(null);
-
+  const { allInterviews } = useSelector((state) => state.candidatesOverview);
+  console.log("all interviewes:", allInterviews)
   const departments = useSelector((state) => state.department.list);
   const exams = useSelector((state) => state.exam.list);
 
@@ -70,6 +71,7 @@ const CandidatesOverviewPage = () => {
   useEffect(() => {
     dispatch(fetchUsers());
     dispatch(fetchCandidatesOverview());
+    dispatch(fetchAllInterviews())
   }, [dispatch]);
 
   // Filtering + Sorting
@@ -829,10 +831,11 @@ const CandidatesOverviewPage = () => {
 
                   <CustomCalendar
                     selectedDate={interviewForm.interviewDate}
-                    onSelect={(date) =>
-                      setInterviewForm({ ...interviewForm, interviewDate: date })
-                    }
+                    onSelect={(date) => setInterviewForm({ ...interviewForm, interviewDate: date })}
+                    scheduledInterviews={allInterviews} // array from state or backend
+
                   />
+
 
 
                   <p className="text-xs text-gray-500 mt-2">
