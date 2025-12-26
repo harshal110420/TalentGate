@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const { DashMatrixDB } = require("../../models");
-const { InterviewScore, Interview, Candidate, User } = DashMatrixDB;
+const { InterviewScore, Interview, Candidate, User, Department, Role } =
+  DashMatrixDB;
 
 const saveDraftScore = asyncHandler(async (req, res) => {
   const { interviewId } = req.params;
@@ -133,6 +134,18 @@ const fetchInterviewScores = asyncHandler(async (req, res) => {
         model: User,
         as: "interviewer",
         attributes: ["id", "firstName", "lastName", "mail"],
+        include: [
+          {
+            model: Department,
+            as: "department",
+            attributes: ["id", "name"],
+          },
+          {
+            model: Role,
+            as: "role",
+            attributes: ["id", "displayName"],
+          },
+        ],
       },
       {
         model: Candidate,

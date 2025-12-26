@@ -648,7 +648,9 @@ const CandidatesOverviewPage = () => {
                               lastInterview.round === "Managerial" ||
                               lastInterview.round === "Technical") &&
                             lastInterview.status === "Completed" &&
-                            row.applicationStage !== "Selected" &&  // <-- add this line
+                            row.applicationStage !== "Selected" &&
+                            row.applicationStage !== "Rejected" &&     // <-- prevent showing after rejection
+                            row.applicationStage !== "Hired" &&   // <-- add this line
                             (
                               <button
                                 onClick={() => handleSelectCandidate(row.id)}

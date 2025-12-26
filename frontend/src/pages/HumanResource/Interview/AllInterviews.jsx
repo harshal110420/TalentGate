@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchAllInterviews } from "../../../features/HR_Slices/Interview/InterviewSlice";
 import { useNavigate } from "react-router-dom";
 import { getModulePathByMenu } from "../../../utils/navigation";
+import SkeletonPage from "../../../components/skeletons/skeletonPage";
 
 const AllInterviews = () => {
     const dispatch = useDispatch();
@@ -11,6 +12,8 @@ const AllInterviews = () => {
     const { allInterviews, loading } = useSelector(
         (state) => state.candidatesOverview
     );
+    console.log("All Interviews:", allInterviews);
+
     const modules = useSelector((state) => state.modules.list);
     const menus = useSelector((state) => state.menus.list);
     const modulePath = getModulePathByMenu("interview_evaluation", modules, menus);
@@ -19,158 +22,118 @@ const AllInterviews = () => {
         dispatch(fetchAllInterviews());
     }, [dispatch]);
 
-    if (loading) {
-        return <div className="p-6 text-gray-500">Loading interviews...</div>;
-    }
+    // ===== Group interviews by candidate =====
+    const groupByCandidate = (interviews) => {
+        const map = {};
+        interviews.forEach((item) => {
+            const cid = item.candidateId;
+            if (!map[cid]) {
+                map[cid] = {
+                    candidate: item.candidate,
+                    jobOpening: item.jobOpening,
+                    interviews: [],
+                };
+            }
+            map[cid].interviews.push(item);
+        });
+        return Object.values(map);
+    };
 
+    const candidatesWithInterviews = groupByCandidate(allInterviews);
+    console.log("candidate with interviews:", candidatesWithInterviews)
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-6">
-                All Interviews (HR View)
-            </h2>
+            <div className="mb-6">
+                <h2 className="text-2xl font-semibold tracking-tight">Interviews</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                    All scheduled & completed interviews across hiring pipeline
+                </p>
+            </div>
 
-            <div className="overflow-x-auto bg-white rounded-xl shadow border">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
-                        <tr>
-                            <th className="px-4 py-3 text-left">Candidate</th>
-                            <th className="px-4 py-3 text-left">Job</th>
-                            <th className="px-4 py-3">Round</th>
-                            <th className="px-4 py-3">Date</th>
-                            <th className="px-4 py-3">Time</th>
-                            <th className="px-4 py-3">Type</th>
-                            <th className="px-4 py-3">Panel</th>
-                            <th className="px-4 py-3">Status</th>
-                            <th className="px-4 py-3 text-center">Actions</th>
+            <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200 relative">
+                <table className="min-w-full text-sm table-fixed">
+                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs border-b">
+                        <tr className="border-b hover:bg-gray-50 even:bg-gray-50/40 transition">
+                            <th className="px-4 py-3 text-left whitespace-nowrap">Candidate</th>
+                            <th className="px-4 py-3 text-left whitespace-nowrap">Job</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Rounds</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Last Interview Date</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Status</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap sticky right-0 bg-white z-10">Actions</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        {allInterviews?.length === 0 && (
+                        {/* === SKELETON WHILE LOADING === */}
+                        {loading && <SkeletonPage rows={6} columns={6} />}
+
+                        {/* === EMPTY STATE === */}
+                        {!loading && candidatesWithInterviews?.length === 0 && (
                             <tr>
-                                <td colSpan="9" className="text-center py-6 text-gray-500">
+                                <td colSpan="6" className="text-center py-6 text-gray-500">
                                     No interviews found
                                 </td>
                             </tr>
                         )}
 
-                        {allInterviews.map((interview) => (
-                            <tr
-                                key={interview.id}
-                                className="border-t hover:bg-gray-50 transition"
-                            >
-                                {/* Candidate */}
-                                <td className="px-4 py-3">
-                                    <div className="font-medium">
-                                        {interview.candidate?.name}
-                                    </div>
-                                    {/* <div className="text-xs text-gray-500">
-                                        {interview.candidate?.email}
-                                    </div> */}
-                                </td>
+                        {/* === CANDIDATE ROWS === */}
+                        {!loading && candidatesWithInterviews.map((item) => {
+                            // sort interviews by date ascending
+                            const sortedRounds = item.interviews.sort((a, b) => new Date(a.interviewDate) - new Date(b.interviewDate));
+                            const lastInterview = sortedRounds[sortedRounds.length - 1];
 
-                                {/* Job */}
-                                <td className="px-4 py-3">
-                                    <div>{interview.jobOpening?.title}</div>
-                                    {/* <div className="text-xs text-gray-500">
-                                        {interview.jobOpening?.jobCode}
-                                    </div> */}
-                                </td>
+                            return (
+                                <tr key={item.candidate.id} className="border-t hover:bg-gray-50 transition text-gray-700">
+                                    {/* Candidate */}
+                                    <td className="px-4 py-3 whitespace-nowrap overflow-hidden truncate max-w-[200px]">
+                                        <div className="font-medium">{item.candidate?.name}</div>
+                                        <div className="text-xs text-gray-500">{item.candidate?.email}</div>
+                                    </td>
 
-                                {/* Round */}
-                                <td className="px-4 py-3 text-center">
-                                    {interview.round}
-                                </td>
+                                    {/* Job */}
+                                    <td className="px-4 py-3 whitespace-nowrap truncate max-w-[200px]">
+                                        {item.jobOpening?.title}
+                                    </td>
 
-                                {/* Date */}
-                                <td className="px-4 py-3 text-center">
-                                    {new Date(interview.interviewDate).toLocaleDateString("en-GB", {
-                                        day: "2-digit",
-                                        month: "short",
-                                        year: "numeric"
-                                    })}
+                                    {/* Rounds Count */}
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                                        {item.interviews.length} rounds
+                                    </td>
 
-                                </td>
-
-                                {/* Time */}
-                                <td className="px-4 py-3 text-center">
-                                    {new Date(`1970-01-01T${interview.startTime}`).toLocaleTimeString("en-US", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        hour12: true,
-                                    })}
-                                    {" – "}
-                                    {new Date(`1970-01-01T${interview.endTime}`).toLocaleTimeString("en-US", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        hour12: true,
-                                    })}
-                                </td>
-
-
-                                {/* Type */}
-                                <td className="px-4 py-3 text-center">
-                                    {interview.interviewType}
-                                </td>
-
-                                {/* Panel */}
-                                <td className="px-4 py-3">
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {interview.panel?.map((p) => {
-                                            const name = `${p.user?.firstName} ${p.user?.lastName}`;
-                                            return (
-                                                <div
-                                                    key={p.id}
-                                                    className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700
-                     px-2 py-0.5 rounded-full text-[10px] font-medium
-                     text-gray-700 dark:text-gray-200"
-                                                >
-                                                    {/* avatar initials */}
-                                                    <div className="w-5 h-5 flex items-center justify-center rounded-full 
-                          bg-gray-300 dark:bg-gray-600 text-[9px] font-semibold">
-                                                        {p.user?.firstName?.[0]}
-                                                        {p.user?.lastName?.[0]}
-                                                    </div>
-
-                                                    {/* name + role */}
-                                                    <span>{name}</span>
-                                                    <span className="text-gray-500 dark:text-gray-400 text-[9px]">
-                                                        ({p.role})
-                                                    </span>
-                                                </div>
-                                            );
+                                    {/* Last Interview Date */}
+                                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                                        {new Date(lastInterview.interviewDate).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "short",
+                                            year: "numeric"
                                         })}
-                                    </div>
-                                </td>
+                                    </td>
 
-                                {/* Status */}
-                                <td className="px-4 py-3 text-center">
-                                    <span
-                                        className={`px-2 py-1 rounded-full text-xs font-medium
-                      ${interview.status === "Scheduled"
-                                                ? "bg-blue-100 text-blue-700"
-                                                : interview.status === "Completed"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : "bg-gray-100 text-gray-600"
-                                            }`}
-                                    >
-                                        {interview.status}
-                                    </span>
-                                </td>
+                                    {/* Status of Last Round */}
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium
+                                            ${lastInterview.status === "Scheduled"
+                                                ? "bg-blue-50 text-blue-600 ring-1 ring-blue-200"
+                                                : lastInterview.status === "Completed"
+                                                    ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+                                                    : "bg-gray-100 text-gray-600 ring-1 ring-gray-200"
+                                            }`}>
+                                            {lastInterview.status}
+                                        </span>
+                                    </td>
 
-                                {/* Actions */}
-                                <td className="px-4 py-3 text-center">
-                                    <button
-                                        onClick={() =>
-                                            navigate(`/module/${modulePath}/interview_evaluation/review/${interview.id}`)
-                                        }
-                                        className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700"
-                                    >
-                                        View Scores
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
+                                    {/* Actions */}
+                                    <td className="px-4 py-3 text-center whitespace-nowrap sticky right-0 bg-white shadow-[inset_8px_0_8px_-8px_rgba(0,0,0,0.1)]">
+                                        <button
+                                            onClick={() => navigate(`/module/${modulePath}/interview_evaluation/interviews/${item.candidate.id}`)}
+                                            className="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-medium hover:bg-indigo-700 transition"
+                                        >
+                                            View All Rounds
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

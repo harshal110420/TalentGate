@@ -366,26 +366,14 @@ const CandidatePage = () => {
       </div>
 
       {/* Filters */}
-      <div className="
-  bg-gray-50 dark:bg-gray-900 
-  border border-gray-200 dark:border-gray-700 
-  rounded-xl p-4 mb-5 
-  space-y-3
-">
-
+      <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-5 space-y-3">
         {/* --- Row 1 : Search (Full Width) --- */}
         <input
           type="text"
           placeholder="Search by name, email or mobile..."
           value={filters.search}
           onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-          className="
-      w-full
-      border border-gray-300 dark:border-gray-600 
-      rounded-md px-4 py-2 text-sm 
-      focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-      bg-white dark:bg-gray-800
-    "
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800"
         />
 
 
@@ -482,8 +470,9 @@ const CandidatePage = () => {
               <th className="px-4 py-3 text-left">Department</th>
               <th className="px-4 py-3 text-left">Source</th>
               <th className="px-4 py-3 text-left">Application Stage</th>
-              <th className="px-4 py-3 text-left">Exam Status</th>
+
               <th className="px-4 py-3 text-center">Resume</th>
+              <th className="px-4 py-3 text-left">Exam Status</th>
               {/* <th className="px-4 py-3 text-left">Exam</th> */}
               <th className="px-4 py-3 text-left">Last Mail</th>
               <th className="px-4 py-3 text-left">Status</th>
@@ -536,30 +525,13 @@ const CandidatePage = () => {
                     </span>
                   </td>
 
-                  <td className="px-4 py-2">
+                  <td className="px-4 py-2 ">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap
       ${stageBadgeClasses(c.applicationStage)}
     `}
                     >
                       {c.applicationStage}
-                    </span>
-                  </td>
-
-                  <td className="px-4 py-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.examStatus === "Assigned"
-                        ? "bg-blue-100 text-blue-700"
-                        : c.examStatus === "In progress"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : c.examStatus === "Completed"
-                            ? "bg-green-100 text-green-700"
-                            : c.examStatus === "Expired"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-gray-200 text-gray-800"
-                        }`}
-                    >
-                      {getExamStatusLabel(c.examStatus)}
                     </span>
                   </td>
 
@@ -581,6 +553,23 @@ const CandidatePage = () => {
                     ) : (
                       <span className="text-gray-400 text-xs">N/A</span>
                     )}
+                  </td>
+
+                  <td className="px-4 py-2">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${c.examStatus === "Assigned"
+                        ? "bg-blue-100 text-blue-700"
+                        : c.examStatus === "In progress"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : c.examStatus === "Completed"
+                            ? "bg-green-100 text-green-700"
+                            : c.examStatus === "Expired"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-gray-200 text-gray-800"
+                        }`}
+                    >
+                      {getExamStatusLabel(c.examStatus)}
+                    </span>
                   </td>
 
                   {/* <td className="px-4 py-2">{c.exam?.name || "-"}</td> */}
@@ -1066,8 +1055,6 @@ const CandidatePage = () => {
         }}
         loading={reassignLoading}
       />
-
-
     </div>
   );
 };
