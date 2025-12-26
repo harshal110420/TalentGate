@@ -36,35 +36,22 @@ const CandidateInterviewRounds = () => {
 
     return (
         <div className="p-6">
-            <button
-                onClick={() => navigate(-1)}
-                className="
-        inline-flex items-center gap-2
-        px-3 py-1.5
-        text-sm font-medium
-        text-indigo-600 dark:text-indigo-400
-        bg-indigo-50 dark:bg-indigo-900/20
-        border border-indigo-200 dark:border-indigo-700
-        rounded-md
-        hover:bg-indigo-100 dark:hover:bg-indigo-900/30
-        hover:text-indigo-700 dark:hover:text-indigo-300
-        transition-all duration-200
-        shadow-sm hover:shadow-md
-    "
-            >
-                <StepBack className="w-4 h-4" />
-                Back
-            </button>
-
-
-            <h2 className="text-2xl font-semibold tracking-tight">
-                Interview Rounds for {candidate?.name}
-            </h2>
-
-            <p className="text-sm text-gray-500 mt-1">
-                Job Applied: {job?.title} ({job?.jobCode})
-            </p>
-
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="text-2xl font-semibold tracking-tight">
+                        Interview Rounds for {candidate?.name}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Job Applied: {job?.title} ({job?.jobCode})
+                    </p>
+                </div>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all duration-200 shadow-sm hover:shadow-md">
+                    <StepBack className="w-4 h-4" />
+                    Back
+                </button>
+            </div>
             <div className="overflow-x-auto mt-6 bg-white rounded-xl shadow-sm border border-gray-200">
                 <table className="min-w-full text-sm table-fixed">
                     <thead className="bg-gray-50 text-gray-600 uppercase text-xs border-b">
