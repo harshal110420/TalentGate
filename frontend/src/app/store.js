@@ -23,6 +23,8 @@ import userPermissionReducer from "../features/UserPermission/userPermissionSlic
 import jobOpeningReducer from "../features/HR_Slices/jobOpening/jobOpeningSlice";
 import candidatesOverviewReducer from "../features/HR_Slices/Interview/InterviewSlice";
 import interviewScoreReducer from "../features/HR_Slices/Interview_scores/interviewScoreSlice";
+import notificationReducer from "../features/Notification/notificationSlice";
+
 const rootReducer = combineReducers({
   permission: permissionReducer,
   userPermission: userPermissionReducer,
@@ -44,6 +46,7 @@ const rootReducer = combineReducers({
   jobOpening: jobOpeningReducer,
   candidatesOverview: candidatesOverviewReducer,
   interviewScore: interviewScoreReducer,
+  notificationData: notificationReducer,
 });
 
 const persistConfig = {

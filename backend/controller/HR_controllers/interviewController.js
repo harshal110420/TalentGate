@@ -8,6 +8,7 @@ const {
   Interview,
   InterviewPanel,
   User,
+  InterviewScore,
 } = DashMatrixDB;
 
 // Fetch candidates with related job & exam info
@@ -388,6 +389,12 @@ const getMyInterviews = asyncHandler(async (req, res) => {
         model: JobOpening,
         as: "jobOpening",
         attributes: ["id", "jobCode", "title"],
+      },
+      {
+        model: InterviewScore, // 👈  **score status yaha se aayega**
+        as: "interviewScore",
+        attributes: ["status"], // sirf status chahiye
+        required: false, // 👈 if no score exists, still return interview
       },
     ],
 

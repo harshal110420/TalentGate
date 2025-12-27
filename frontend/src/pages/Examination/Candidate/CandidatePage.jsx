@@ -541,12 +541,14 @@ const CandidatePage = () => {
                         href={c.resumeUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-
                         className="
-        inline-flex items-center gap-1 px-2 py-1 
-        text-xs rounded-md bg-blue-100 text-blue-700
-        hover:bg-blue-200 transition
-        "
+        inline-flex items-center justify-center gap-1 
+        px-3 py-1.5 text-xs font-medium rounded-md
+        bg-blue-50 text-blue-700 border border-blue-200
+        hover:bg-blue-100 hover:border-blue-300
+        dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800
+        transition-all duration-200
+      "
                       >
                         Download
                       </a>
@@ -554,6 +556,7 @@ const CandidatePage = () => {
                       <span className="text-gray-400 text-xs">N/A</span>
                     )}
                   </td>
+
 
                   <td className="px-4 py-2">
                     <span
@@ -599,7 +602,7 @@ const CandidatePage = () => {
                         {c.applicationStage === "Applied" && (
                           <button
                             onClick={() => handleResumeReview(c.id)}
-                            className={`${smallCuteBtn} bg-yellow-500 hover:bg-yellow-600 text-white`}
+                            className={`${smallCuteBtn} bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800 truncate w-32 h-8 text-xs`}
                           >
                             Review Resume
                           </button>
@@ -609,7 +612,7 @@ const CandidatePage = () => {
                         {c.applicationStage === "Resume Reviewed" && (
                           <button
                             onClick={() => handleShortlistForExam(c.id)}
-                            className={`${smallCuteBtn} bg-indigo-600 hover:bg-indigo-700 text-white`}
+                            className={`${smallCuteBtn} bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700 dark:hover:bg-indigo-800 truncate w-32 h-8 text-xs`}
                           >
                             Shortlist for Exam
                           </button>
@@ -624,10 +627,11 @@ const CandidatePage = () => {
                                 setSelectedCandidate(c);
                                 setConfirmModalOpen(true);
                               }}
-                              className="w-8 h-8 flex items-center justify-center rounded-full bg-green-600 hover:bg-green-700 text-white"
-                              title="Send Exam Mail"
+                              className={`${smallCuteBtn}bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-800 truncate w-32 h-8 text-xs`}
+                              title="Send Exam Mail Link"
                             >
-                              <Send className="w-4 h-4" />
+                              {/* <Send className="w-4 h-4" /> */}
+                              Send Link
                             </button>
                           )}
 
@@ -638,10 +642,11 @@ const CandidatePage = () => {
                               setSelectedReassignCandidate(c);
                               setReassignModalOpen(true);
                             }}
-                            className="text-gray-600 hover:text-black p-1"
+                            className="bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800 truncate w-32 h-8 text-xs"
                             title="Reassign Exam"
                           >
-                            <RefreshCcw className="w-4 h-4" />
+                            Re-send Link
+                            {/* <RefreshCcw className="w-4 h-4" /> */}
                           </button>
                         )}
 
@@ -650,7 +655,7 @@ const CandidatePage = () => {
                           c.applicationStage === "Exam Completed" && (
                             <button
                               onClick={() => handleShortlistForInterview(c.id)}
-                              className={`${smallCuteBtn} bg-purple-600 hover:bg-purple-700 text-white`}
+                              className={`${smallCuteBtn} bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700 dark:hover:bg-purple-800 truncate w-32 h-8 text-xs`}
                             >
                               Shortlist for Interview
                             </button>

@@ -10,6 +10,7 @@ const MyInterviews = () => {
     const navigate = useNavigate();
 
     const { myInterviews, loading } = useSelector((state) => state.candidatesOverview);
+    console.log("My interview:", myInterviews)
     const modules = useSelector((state) => state.modules.list);
     const menus = useSelector((state) => state.menus.list);
     const modulePath = getModulePathByMenu("interview_evaluation", modules, menus);
@@ -38,10 +39,7 @@ const MyInterviews = () => {
             return matchesSearch && matchesJob && matchesRound && matchesStatus;
         });
     }, [filters, myInterviews]);
-
-    if (loading) return <div className="p-6 text-gray-500 text-center">Loading your interviews...</div>;
-    if (!myInterviews?.length) return <div className="p-6 text-center text-gray-500">No interviews assigned yet.</div>;
-
+    console.log("Filtered interview:", filteredInterviews)
     // Utility to get unique values for dropdowns
     const getUniqueValues = (key) => [...new Set(myInterviews.map((i) => i[key]))].filter(Boolean);
 
@@ -73,9 +71,9 @@ const MyInterviews = () => {
                             onChange={(e) => setFilters({ ...filters, [filter.key]: e.target.value })}
                             className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800"
                         >
-                            <option value="">All {filter.label}s</option>
-                            {filter.options?.map((opt) => (
-                                <option key={opt} value={opt}>
+                            <option value="">All {filter.label}</option>
+                            {filter.options?.map((opt, idx) => (
+                                <option key={`${opt}-${idx}`} value={opt}>
                                     {opt}
                                 </option>
                             ))}
@@ -105,7 +103,7 @@ const MyInterviews = () => {
                         ) : filteredInterviews.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="text-center py-4 text-gray-500">
-                                    No interviews found.
+                                    No interviews assigned yet.
                                 </td>
                             </tr>
                         ) : (
@@ -152,20 +150,36 @@ const MyInterviews = () => {
                                             {interview.status}
                                         </span>
                                     </td>
-                                    <td className="w-[90px] px-2 py-1 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
-                                        <button
-                                            onClick={() =>
-                                                navigate(
-                                                    `/module/${modulePath}/assigned_interviews/enter-score/${interview.id}`
-                                                )
-                                            }
-                                            className="text-xs bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300
-               px-3 py-1 rounded-full border border-blue-200 dark:border-blue-700
-               hover:bg-blue-100 dark:hover:bg-blue-800 transition-all duration-200
-               shadow-sm hover:shadow"
-                                        >
-                                            Score
-                                        </button>
+                                    <td className="w-[120px] px-2 py-1 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
+                                        {(() => {
+                                            const scoreStatus = interview.interviewScore?.status;
+                                            const interviewStatus = interview.status;
+
+                                            // --- Determine Button Text ---
+                                            const isViewScore =
+                                                scoreStatus === "Locked" ||
+                                                scoreStatus === "Submitted" ||
+                                                (interviewStatus === "Completed" && scoreStatus !== "Draft");
+
+                                            const buttonText = isViewScore ? "View Score" : "Add Score";
+
+                                            return (
+                                                <button
+                                                    onClick={() =>
+                                                        navigate(
+                                                            `/module/${modulePath}/assigned_interviews/enter-score/${interview.id}`
+                                                        )
+                                                    }
+                                                    className={`text-xs px-3 py-1 rounded-full border transition-all duration-200 shadow-sm hover:shadow
+                ${isViewScore
+                                                            ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-800"
+                                                            : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800"
+                                                        }`}
+                                                >
+                                                    {buttonText}
+                                                </button>
+                                            );
+                                        })()}
                                     </td>
 
                                 </tr>

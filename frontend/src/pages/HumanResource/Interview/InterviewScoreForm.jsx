@@ -5,12 +5,14 @@ import {
     saveDraftScore,
     submitFinalScore,
 } from "../../../features/HR_Slices/Interview_scores/interviewScoreSlice";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { StepBack } from "lucide-react";
 
 const InterviewScoreForm = () => {
     const { interviewId } = useParams();
+    const navigate = useNavigate()
     const dispatch = useDispatch();
-
+    const [scoreError, setScoreError] = useState("");
     const { myScore, loading } = useSelector(
         (state) => state.interviewScore
     );
@@ -28,22 +30,34 @@ const InterviewScoreForm = () => {
     }, [dispatch, interviewId]);
 
     useEffect(() => {
-        if (myScore) {
+        if (!loading && myScore) {
             setForm({
-                score: myScore.score || "",
-                recommendation: myScore.recommendation || "",
-                strengths: myScore.strengths || "",
-                weaknesses: myScore.weaknesses || "",
-                comments: myScore.comments || "",
+                score: myScore.score ?? "",
+                recommendation: myScore.recommendation ?? "",
+                strengths: myScore.strengths ?? "",
+                weaknesses: myScore.weaknesses ?? "",
+                comments: myScore.comments ?? "",
             });
         }
-    }, [myScore]);
+    }, [loading, myScore]);
 
     const isLocked =
         myScore?.status === "Submitted" || myScore?.status === "Locked";
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+
+        if (name === "score") {
+            const numericValue = Number(value);
+
+            if (numericValue < 0 || numericValue > 10) {
+                setScoreError("Score must be between 0 and 10");
+                return;
+            } else {
+                setScoreError(""); // clear when valid
+            }
+        }
+        setForm({ ...form, [name]: value });
     };
 
     const saveDraft = () => {
@@ -88,25 +102,35 @@ const InterviewScoreForm = () => {
             <div className="max-w-6xl w-full mx-auto px-6 md:px-10 pb-24">
 
                 {/* ==== HEADER ==== */}
-                <div className="z-10 pb-4 pt-6 border-b">
-                    <h2 className="text-2xl font-semibold tracking-tight">Interview Evaluation</h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Fill out your feedback with clarity — it shapes the hiring decision.
-                    </p>
+                <div className="flex items-center justify-between z-10 pb-4 pt-6 border-b">
+                    <div>
+                        <h2 className="text-2xl font-semibold tracking-tight">Interview Evaluation</h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                            Fill out your feedback with clarity — it shapes the hiring decision.
+                        </p>
 
-                    {myScore?.status && (
-                        <span
-                            className={`inline-block mt-3 text-xs px-3 py-[5px] rounded-full font-medium shadow-sm
+                        {myScore?.status && (
+                            <span
+                                className={`inline-block mt-3 text-xs px-3 py-[5px] rounded-full font-medium shadow-sm
                         ${myScore.status === "Draft"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : myScore.status === "Submitted"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-gray-200 text-gray-700"
-                                }`}
-                        >
-                            {myScore.status}
-                        </span>
-                    )}
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : myScore.status === "Submitted"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-gray-200 text-gray-700"
+                                    }`}
+                            >
+                                {myScore.status}
+                            </span>
+                        )}
+
+                    </div>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 transition-all duration-200 shadow-sm hover:shadow-md">
+                        <StepBack className="w-4 h-4" />
+                        Back
+                    </button>
+
                 </div>
 
                 {/* ==== READ ONLY NOTICE ==== */}
@@ -148,21 +172,32 @@ const InterviewScoreForm = () => {
                     <div className="space-y-8">
 
                         {/* SCORE */}
-                        <div className="bg-white border rounded-xl p-5 shadow-sm">
+                        <div className="bg-white border rounded-xl p-5 shadow-sm relative">
                             <label className="block text-sm font-semibold text-gray-800 mb-1">Overall Score</label>
                             <p className="text-xs text-gray-500 mb-2">Rate the candidate from 0 to 10</p>
-                            <input
-                                type="number"
-                                name="score"
-                                min="0"
-                                max="10"
-                                step="0.5"
-                                value={form.score}
-                                onChange={handleChange}
-                                disabled={isLocked}
-                                className="w-28 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                            />
+
+                            <div className="relative inline-block">
+                                <input
+                                    type="number"
+                                    name="score"
+                                    min="0"
+                                    max="10"
+                                    step="0.5"
+                                    value={form.score}
+                                    onChange={handleChange}
+                                    disabled={isLocked}
+                                    className={`w-28 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 ${scoreError ? "border-red-500" : ""}`} />
+
+                                {scoreError && (
+                                    <span
+                                        className="absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-red-50 text-red-700 border border-red-200 text-xs px-3 py-[4px] rounded-full shadow-sm whitespace-nowrap">
+                                        {scoreError}
+                                    </span>
+                                )}
+
+                            </div>
                         </div>
+
 
                         {/* RECOMMENDATION */}
                         <div className="bg-white border rounded-xl p-5 shadow-sm">

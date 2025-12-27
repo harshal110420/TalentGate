@@ -1,18 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyPermissions } from "../features/UserPermission/userPermissionSlice";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import DashboardSkeleton from "../components/skeletons/DashboardSkeleton";
-import ProfileIcon from "../components/common/ProfileIcon";
+import Navbar from "../components/Navbar";           // ⭐ New import
 
 const Dashboard = () => {
-
   const { user } = useAuth();
-
   const dispatch = useDispatch();
-  const dropdownRef = useRef(null);
-
 
   useEffect(() => {
     if (user?.id) {
@@ -21,7 +17,7 @@ const Dashboard = () => {
   }, [user, dispatch]);
 
   const { loggedInUserPermissions = [], loading } = useSelector(
-    state => state.userPermission || {}
+    (state) => state.userPermission || {}
   );
 
   if (!user) return null;
@@ -33,17 +29,12 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
 
-      <nav className="bg-white dark:bg-gray-800 shadow-md py-3 px-6 flex justify-between items-center">
-        <div className="text-2xl font-bold text-blue-600 dark:text-blue-300">
-          Talent Gate
-        </div>
-        <ProfileIcon />
-      </nav>
+      {/* ⭐ Navbar now included here */}
+      <Navbar />
 
       <div className="p-6">
-
         <h1 className="text-2xl font-bold mb-4">
           Welcome, {user.username}
         </h1>
@@ -65,7 +56,6 @@ const Dashboard = () => {
             ))}
           </div>
         )}
-
       </div>
     </div>
   );

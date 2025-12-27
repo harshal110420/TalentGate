@@ -469,7 +469,7 @@ const CandidatesOverviewPage = () => {
 
       {/* -------------------------------- TABLE -------------------------------- */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm bg-white dark:bg-gray-900">
-        <table className="min-w-[1000px] w-full text-sm">
+        <table className="min-w-[1400px] w-full text-sm">
           <thead className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase tracking-wide text-[11px] font-medium">
             <tr>
               <th className="px-4 py-3 text-left">Candidate</th>
@@ -479,10 +479,10 @@ const CandidatesOverviewPage = () => {
               <th className="px-4 py-3 text-left">Job </th>
               <th className="px-4 py-3 text-left">Interview Status</th>
               <th className="px-4 py-3 text-left">Interview Round</th>
-              <th className="w-[160px] px-4 py-3 text-center sticky right-[110px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
+              <th className="w-[160px] px-4 py-3 text-center sticky right-[140px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                 Quick Actions
               </th>
-              <th className="w-[160px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 z-30 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
+              <th className="w-[120px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 z-30 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
                 Actions
               </th>
             </tr>
@@ -507,7 +507,7 @@ const CandidatesOverviewPage = () => {
                   </td>
 
                   <td
-                    className={`px-4 py-3 font-semibold capitalize ${row.examResults?.[0]?.resultStatus === "pass"
+                    className={`px-4 py-3 font-semibold text-center capitalize ${row.examResults?.[0]?.resultStatus === "pass"
                       ? "text-green-600"
                       : row.examResults?.[0]?.resultStatus === "fail"
                         ? "text-red-600"
@@ -539,7 +539,7 @@ const CandidatesOverviewPage = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-center">
                     {(() => {
                       const { activeInterview, lastInterview } =
                         getInterviewInfo(row.interviews);
@@ -584,7 +584,7 @@ const CandidatesOverviewPage = () => {
                   </td>
 
 
-                  <td className="w-[160px] px-4 py-2 text-center sticky right-[110px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
+                  <td className="w-[160px] px-4 py-2 text-center sticky right-[140px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                     <div className="flex flex-col items-center gap-2">
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
 
@@ -593,7 +593,7 @@ const CandidatesOverviewPage = () => {
                           const { canScheduleNext, lastInterview } = getInterviewInfo(row.interviews);
 
                           // text decide karna
-                          const scheduleLabel = lastInterview ? "Schedule Next Interview" : "Schedule Interview";
+                          const scheduleLabel = lastInterview ? "Next Interview" : "Schedule Interview";
 
                           return (
                             canScheduleNext &&
@@ -605,7 +605,7 @@ const CandidatesOverviewPage = () => {
                                   setSelectedInterviewCandidate(row);
                                   setInterviewModalOpen(true);
                                 }}
-                                className={`${smallCuteBtn} bg-teal-600 hover:bg-teal-700 text-white`}
+                                className={`${smallCuteBtn} bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-800 truncate w-32 h-8 text-xs`}
                               >
                                 {scheduleLabel}
                               </button>
@@ -621,7 +621,7 @@ const CandidatesOverviewPage = () => {
                               setSelectedRescheduleInterview(row.interviews?.[0]);
                               setRescheduleModalOpen(true);
                             }}
-                            className={`${smallCuteBtn} bg-yellow-600 hover:bg-yellow-700 text-white`}
+                            className={`${smallCuteBtn} bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700 dark:hover:bg-yellow-800 truncate w-32 h-8 text-xs`}
                           >
                             Reschedule
                           </button>
@@ -634,7 +634,7 @@ const CandidatesOverviewPage = () => {
                               onClick={() =>
                                 handleInterviewCompleted(row.interviews?.[0]?.id)
                               }
-                              className={`${smallCuteBtn} bg-green-600 hover:bg-green-700 text-white`}
+                              className={`${smallCuteBtn} bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-800 truncate w-32 h-8 text-xs`}
                             >
                               Mark Completed
                             </button>
@@ -656,7 +656,7 @@ const CandidatesOverviewPage = () => {
                             (
                               <button
                                 onClick={() => handleSelectCandidate(row.id)}
-                                className={`${smallCuteBtn} bg-indigo-600 hover:bg-indigo-700 text-white`}
+                                className={`${smallCuteBtn} bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700 dark:hover:bg-indigo-800 truncate w-32 h-8 text-xs`}
                               >
                                 Select Candidate
                               </button>
@@ -670,7 +670,7 @@ const CandidatesOverviewPage = () => {
                         {row.applicationStage === "Selected" && (
                           <button
                             onClick={() => openHireModal(row.id)}
-                            className={`${smallCuteBtn} bg-emerald-600 hover:bg-emerald-700 text-white`}
+                            className={`${smallCuteBtn} bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700 dark:hover:bg-emerald-800 truncate w-32 h-8 text-xs`}
                           >
                             Hire
                           </button>
@@ -682,7 +682,7 @@ const CandidatesOverviewPage = () => {
 
 
 
-                  <td className="w-[160px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
+                  <td className="w-[120px] px-4 py-2 text-center sticky right-0 bg-gray-50 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
                     <div className="flex flex-col items-center gap-2">
 
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
@@ -693,10 +693,11 @@ const CandidatesOverviewPage = () => {
                                 setSelectedRejectCandidate(row);
                                 setRejectModalOpen(true);
                               }}
-                              className="text-red-600 hover:text-red-800 p-1"
+                              className={`${smallCuteBtn} bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-800 truncate w-20 h-8 text-xs`}
                               title="Reject Candidate"
                             >
-                              <UserRoundX className="w-4 h-4" />
+                              {/* <UserRoundX className="w-4 h-4" /> */}
+                              Reject
                             </button>
                           )}
                       </ButtonWrapper>
@@ -707,7 +708,7 @@ const CandidatesOverviewPage = () => {
                             setSelectedInterviewId(row.interviews?.[0]?.id);
                             setCancelModalOpen(true);
                           }}
-                          className="w-full bg-red-500 hover:bg-red-600 text-white px-2 py-1.5 rounded text-xs"
+                          className={`${smallCuteBtn} bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-800 truncate w-20 h-8 text-xs`}
                         >
                           Cancel Interview
                         </button>
