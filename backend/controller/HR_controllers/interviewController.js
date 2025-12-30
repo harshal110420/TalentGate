@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+
 const { DashMatrixDB } = require("../../models");
 const {
   Candidate,
@@ -13,7 +14,8 @@ const {
 
 // Fetch candidates with related job & exam info
 const { Op } = require("sequelize");
-
+const { sendNotification } = require("../../utils/notificationService");
+const { io } = require("../../server");
 const getCandidatesOverview = asyncHandler(async (req, res) => {
   const {
     departmentId,
@@ -256,26 +258,23 @@ const createInterview = asyncHandler(async (req, res) => {
   // =============================
   // PANEL MEMBERS (OPTIONAL)
   // =============================
+  let panelMembers = [];
+
   if (panel && Array.isArray(panel) && panel.length > 0) {
     const allowedRoles = ["Lead", "Panelist", "Observer"];
-
     const userIds = panel.map((p) => p.userId);
 
     const users = await User.findAll({
       where: { id: userIds },
       attributes: ["id"],
     });
-
     const validUserIds = users.map((u) => u.id);
 
     const invalidUsers = userIds.filter((id) => !validUserIds.includes(id));
-
-    if (invalidUsers.length > 0) {
-      return res.status(400).json({
-        message: "Invalid panel members found",
-        invalidUsers,
-      });
-    }
+    if (invalidUsers.length > 0)
+      return res
+        .status(400)
+        .json({ message: "Invalid panel members", invalidUsers });
 
     const panelData = panel.map((p) => ({
       interviewId: interview.id,
@@ -285,6 +284,20 @@ const createInterview = asyncHandler(async (req, res) => {
     }));
 
     await InterviewPanel.bulkCreate(panelData);
+
+    // --- Notifications ---
+    for (const member of panel) {
+      await sendNotification(
+        {
+          userId: member.userId,
+          title: "New Interview Assigned",
+          message: `You have been assigned to Interview Round ${round} for ${candidate.name}`,
+          type: "INTERVIEW",
+          interviewId: interview.id,
+        },
+        io
+      );
+    }
   }
 
   return res.status(201).json({

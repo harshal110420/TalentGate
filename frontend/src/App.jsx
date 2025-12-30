@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dashboard from "./pages/DashboardPage";
 import ModuleLayout from "./pages/ModuleLayout";
@@ -23,6 +23,8 @@ import { pushNotification } from "./features/Notification/notificationSlice";
 function AppContent() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth || {});
+  socket.on("connect", () => console.log("🟢 socket connected:", socket.id));
+  socket.on("disconnect", () => console.log("🔴 socket disconnected"));
 
   // ------ 🔔 Real-time notification listener ------
   useEffect(() => {
@@ -32,11 +34,13 @@ function AppContent() {
     socket.emit("join_user", user.id);
 
     // listen new notifications
-    socket.on("new_notification", (data) => {
+    socket.on("notification:new", (data) => {
+      console.log("🔥 Realtime:", data);
       dispatch(pushNotification(data));
+      toast.info(`${data.title}: ${data.message}`);
     });
 
-    return () => socket.off("new_notification");
+    return () => socket.off("notification:new");
   }, [user, dispatch]);
 
   return (

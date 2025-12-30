@@ -479,7 +479,7 @@ const CandidatesOverviewPage = () => {
               <th className="px-4 py-3 text-left">Job </th>
               <th className="px-4 py-3 text-left">Interview Status</th>
               <th className="px-4 py-3 text-left">Interview Round</th>
-              <th className="w-[160px] px-4 py-3 text-center sticky right-[140px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
+              <th className="w-[160px] px-4 py-3 text-center sticky right-[120px] bg-gray-100 dark:bg-gray-800 z-20 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                 Quick Actions
               </th>
               <th className="w-[120px] px-4 py-3 text-center sticky right-0 bg-gray-100 dark:bg-gray-800 z-30 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.35)]">
@@ -584,7 +584,7 @@ const CandidatesOverviewPage = () => {
                   </td>
 
 
-                  <td className="w-[160px] px-4 py-2 text-center sticky right-[140px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
+                  <td className="w-[160px] px-4 py-2 text-center sticky right-[120px] bg-gray-50 dark:bg-gray-800 z-10 shadow-[-6px_0_10px_-6px_rgba(0,0,0,0.25)]">
                     <div className="flex flex-col items-center gap-2">
                       <ButtonWrapper subModule="Candidate Management" permission="edit">
 

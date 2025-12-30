@@ -13,28 +13,32 @@ const HOST = process.env.HOST || "0.0.0.0";
 // 1️⃣ Create HTTP server first
 const server = http.createServer(app);
 
-// 2️⃣ Attach socket on HTTP server
-const io = new Server(server, {
+// 🌍 global socket instance store
+global._io = new Server(server, {
   cors: { origin: "*" },
 });
 
-// 3️⃣ User joins room for personal notifications
-io.on("connection", (socket) => {
-  console.log("🟢 Socket connected:", socket.id);
+// ⬇️ ADD THIS MIDDLEWARE RIGHT AFTER io CREATION
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
+// 3️⃣ User joins room for personal notifications
+global._io.on("connection", (socket) => {
+  console.log("🟢 Socket connected:", socket.id);
   socket.on("join_user", (userId) => {
-    console.log(`👤 user_${userId} joined`);
     socket.join(`user_${userId}`);
   });
 });
 
 // 4️⃣ notification emitter handler
 const sendNotificationToUser = (userId, notification) => {
-  io.to(`user_${userId}`).emit("new_notification", notification);
+  io.to(`user_${userId}`).emit("notification:new", notification);
 };
 
 // 5️⃣ make available everywhere
-module.exports = { io, sendNotificationToUser };
+module.exports = {  sendNotificationToUser };
 
 // 6️⃣ START SERVER
 const startServer = async () => {
