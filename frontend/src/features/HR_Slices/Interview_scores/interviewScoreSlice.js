@@ -94,6 +94,10 @@ const interviewScoresSlice = createSlice({
     lockSuccess: false,
   },
   reducers: {
+    // reset only myScore
+    clearMyScore: (state) => {
+      state.myScore = null;
+    },
     clearScores: (state) => {
       state.myScore = null;
       state.allScores = [];
@@ -183,5 +187,5 @@ const interviewScoresSlice = createSlice({
   },
 });
 
-export const { clearScores } = interviewScoresSlice.actions;
+export const { clearScores, clearMyScore } = interviewScoresSlice.actions;
 export default interviewScoresSlice.reducer;

@@ -45,7 +45,7 @@ const rootReducer = combineReducers({
   examResultPdf: examResultPDFReducer,
   jobOpening: jobOpeningReducer,
   candidatesOverview: candidatesOverviewReducer,
-  interviewScore: interviewScoreReducer,
+  interviewScores: interviewScoreReducer,
   notificationData: notificationReducer,
 });
 

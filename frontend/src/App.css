@@ -43,7 +43,6 @@
   @apply dark:text-gray-400;
 }
 
-
 .react-select__control {
   border-radius: 0.5rem;
   min-height: 42px;

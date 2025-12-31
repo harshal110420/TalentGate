@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
+    clearMyScore,
     fetchMyScore,
     saveDraftScore,
     submitFinalScore,
@@ -13,8 +14,10 @@ const InterviewScoreForm = () => {
     const navigate = useNavigate()
     const dispatch = useDispatch();
     const [scoreError, setScoreError] = useState("");
+    const [currentInterviewId, setCurrentInterviewId] = useState(null);
+
     const { myScore, loading } = useSelector(
-        (state) => state.interviewScore
+        (state) => state.interviewScores
     );
 
     const [form, setForm] = useState({
@@ -26,11 +29,23 @@ const InterviewScoreForm = () => {
     });
 
     useEffect(() => {
+        setCurrentInterviewId(interviewId); // track current form interview
+        dispatch(clearMyScore());
         dispatch(fetchMyScore(interviewId));
-    }, [dispatch, interviewId]);
+
+        return () => {
+            setForm({
+                score: "",
+                recommendation: "",
+                strengths: "",
+                weaknesses: "",
+                comments: "",
+            });
+        };
+    }, [interviewId, dispatch]);
 
     useEffect(() => {
-        if (!loading && myScore) {
+        if (!loading && myScore?.id === currentInterviewId) {  // only populate if same interview
             setForm({
                 score: myScore.score ?? "",
                 recommendation: myScore.recommendation ?? "",
@@ -38,8 +53,17 @@ const InterviewScoreForm = () => {
                 weaknesses: myScore.weaknesses ?? "",
                 comments: myScore.comments ?? "",
             });
+        } else if (!loading) { // reset form for new interview
+            setForm({
+                score: "",
+                recommendation: "",
+                strengths: "",
+                weaknesses: "",
+                comments: "",
+            });
         }
-    }, [loading, myScore]);
+    }, [loading, myScore, currentInterviewId]);
+
 
     const isLocked =
         myScore?.status === "Submitted" || myScore?.status === "Locked";

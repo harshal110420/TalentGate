@@ -1,44 +1,37 @@
 import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Trash2 } from "lucide-react";
 import {
     fetchNotifications,
     markNotificationRead,
     markAllNotificationRead,
-    pushNotification,
+    deleteNotification,
 } from "../features/Notification/notificationSlice";
 import ProfileIcon from "../components/common/ProfileIcon";
 import { useAuth } from "../context/AuthContext";
-import { socket } from "../socket";
-import { toast } from "react-toastify";
 
 const Navbar = () => {
     const dispatch = useDispatch();
     const dropdownRef = useRef(null);
     const { user } = useAuth();
-    const { notifications, unread } = useSelector((s) => s.notificationData);
-    const [open, setOpen] = useState(false);
 
-    // Fetch notifications on mount
+    const { notifications, unread } = useSelector(
+        (state) => state.notificationData
+    );
+
+    const [open, setOpen] = useState(false);
+    const [deletedIds, setDeletedIds] = useState([]);
+
+    // Animation → then delete
+    const handleDelete = (id) => {
+        setDeletedIds((prev) => [...prev, id]);
+        setTimeout(() => dispatch(deleteNotification(id)), 300);
+    };
+
+    // Load notifications on mount
     useEffect(() => {
         if (user?.id) dispatch(fetchNotifications(user.id));
     }, [user, dispatch]);
-
-    // Socket: listen for new notifications
-    // useEffect(() => {
-    //     if (!user?.id) return;
-
-    //     socket.emit("join_user", user.id);
-
-    //     socket.on("notification:new", (data) => {
-    //         dispatch(pushNotification(data));
-    //         toast.info(`${data.title}: ${data.message}`, { autoClose: 3000 });
-    //     });
-    //     socket.on("notification:new", data => console.log("🔥 received:", data));
-
-
-    //     return () => socket.off("notification:new");
-    // }, [user, dispatch]);
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -58,7 +51,6 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center gap-4 relative">
-                {/* Bell Icon */}
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setOpen(!open)}
@@ -86,34 +78,35 @@ const Navbar = () => {
                                 </button>
                             </div>
 
-                            {/* Notifications List */}
+                            {/* List */}
                             {notifications.length === 0 ? (
                                 <div className="p-4 text-gray-500">No notifications</div>
                             ) : (
                                 notifications.map((n) => (
                                     <div
                                         key={n.id}
-                                        className={`flex items-start gap-3 p-3 cursor-pointer border-b hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 ${!n.isRead ? "bg-blue-50 dark:bg-blue-900/30" : ""
-                                            }`}
-                                        onClick={() => dispatch(markNotificationRead(n.id))}
+                                        className={`notification-card flex justify-between items-start gap-3 p-3 border-b
+                                        hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150
+                                        ${!n.isRead ? "bg-blue-50 dark:bg-blue-900/30" : ""}
+                                        ${deletedIds.includes(n.id) ? "slide-delete" : ""}`}
                                     >
-                                        {/* Read/Unread Icon */}
-                                        <div className="mt-1 flex-shrink-0">
-                                            {!n.isRead ? (
-                                                <span className="w-3 h-3 bg-blue-500 rounded-full block animate-pulse"></span>
-                                            ) : (
-                                                <CheckCheck className="w-4 h-4 text-green-500" />
-                                            )}
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex-1">
+                                        <div
+                                            className="flex-1 cursor-pointer"
+                                            onClick={() => dispatch(markNotificationRead(n.id))}
+                                        >
                                             <div className="font-semibold">{n.title}</div>
                                             <div className="text-sm">{n.message}</div>
                                             <div className="text-xs text-gray-500">
                                                 {new Date(n.createdAt).toLocaleString()}
                                             </div>
                                         </div>
+
+                                        <button
+                                            onClick={() => handleDelete(n.id)}
+                                            className="text-red-500 hover:text-red-700 transition-transform duration-200 hover:scale-110"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
                                     </div>
                                 ))
                             )}

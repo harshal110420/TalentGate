@@ -16,7 +16,7 @@ const MENU_CODE = "notification_management";
 router.post(
   "/create-notification",
   authmiddleware,
-//   checkPermissionUnified(MENU_CODE, "new", false),
+  //   checkPermissionUnified(MENU_CODE, "new", false),
   createNotification
 );
 
@@ -33,7 +33,7 @@ router.patch("/mark-read/user/:userId", authmiddleware, markAllRead);
 router.delete(
   "/:id",
   authmiddleware,
-  checkPermissionUnified(MENU_CODE, "delete", false),
+  // checkPermissionUnified(MENU_CODE, "delete", false),
   deleteNotification
 );
 

@@ -29,6 +29,14 @@ export const markAllNotificationRead = createAsyncThunk(
   }
 );
 
+// ---- Delete Notification ----
+export const deleteNotification = createAsyncThunk(
+  "notifications/delete",
+  async (id) => {
+    await axiosInstance.delete(`/notifications/${id}`);
+    return id;
+  }
+);
 const notificationSlice = createSlice({
   name: "notifications",
   initialState: {
@@ -62,6 +70,11 @@ const notificationSlice = createSlice({
       .addCase(markAllNotificationRead.fulfilled, (state) => {
         state.notifications.forEach((n) => (n.isRead = true));
         state.unread = 0;
+      })
+      .addCase(deleteNotification.fulfilled, (state, action) => {
+        const id = action.payload;
+        state.notifications = state.notifications.filter((n) => n.id !== id);
+        state.unread = state.notifications.filter((n) => !n.isRead).length;
       });
   },
 });

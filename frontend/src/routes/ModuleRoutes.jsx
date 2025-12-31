@@ -45,6 +45,7 @@ import CandidatesOverviewPage from "../pages/HumanResource/Interview/InterviewPa
 import InterviewScoreReview from "../pages/HumanResource/Interview/InterviewScoreReview";
 import InterviewScoreForm from "../pages/HumanResource/Interview/InterviewScoreForm";
 import CandidateInterviewRounds from "../pages/HumanResource/Interview/CandidateInterviewRounds";
+import ViewScore from "../pages/HumanResource/Interview/ViewScore";
 const ModuleRoutes = ({ moduleName }) => {
   const location = useLocation();
   const dispatch = useDispatch();
@@ -323,6 +324,7 @@ const ModuleRoutes = ({ moduleName }) => {
             <>
               <Route path="assigned_interviews" element={<MyInterviews />} />
               <Route path="assigned_interviews/enter-score/:interviewId" element={<InterviewScoreForm />} />
+              <Route path="assigned_interviews/view-score/:interviewId" element={<ViewScore />} />
             </>
           );
 

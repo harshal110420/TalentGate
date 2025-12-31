@@ -10,7 +10,6 @@ const MyInterviews = () => {
     const navigate = useNavigate();
 
     const { myInterviews, loading } = useSelector((state) => state.candidatesOverview);
-    console.log("My interview:", myInterviews)
     const modules = useSelector((state) => state.modules.list);
     const menus = useSelector((state) => state.menus.list);
     const modulePath = getModulePathByMenu("interview_evaluation", modules, menus);
@@ -21,7 +20,6 @@ const MyInterviews = () => {
         dispatch(fetchMyInterviews());
     }, [dispatch]);
 
-    // Filtered interviews based on search and dropdown filters
     const filteredInterviews = useMemo(() => {
         const searchTerm = filters.search.toLowerCase();
         return myInterviews.filter((interview) => {
@@ -39,8 +37,7 @@ const MyInterviews = () => {
             return matchesSearch && matchesJob && matchesRound && matchesStatus;
         });
     }, [filters, myInterviews]);
-    console.log("Filtered interview:", filteredInterviews)
-    // Utility to get unique values for dropdowns
+
     const getUniqueValues = (key) => [...new Set(myInterviews.map((i) => i[key]))].filter(Boolean);
 
     return (
@@ -155,7 +152,6 @@ const MyInterviews = () => {
                                             const scoreStatus = interview.interviewScore?.status;
                                             const interviewStatus = interview.status;
 
-                                            // --- Determine Button Text ---
                                             const isViewScore =
                                                 scoreStatus === "Locked" ||
                                                 scoreStatus === "Submitted" ||
@@ -163,15 +159,15 @@ const MyInterviews = () => {
 
                                             const buttonText = isViewScore ? "View Score" : "Add Score";
 
+                                            const navigateTo = isViewScore
+                                                ? `/module/${modulePath}/assigned_interviews/view-score/${interview.id}`
+                                                : `/module/${modulePath}/assigned_interviews/enter-score/${interview.id}`;
+
                                             return (
                                                 <button
-                                                    onClick={() =>
-                                                        navigate(
-                                                            `/module/${modulePath}/assigned_interviews/enter-score/${interview.id}`
-                                                        )
-                                                    }
+                                                    onClick={() => navigate(navigateTo)}
                                                     className={`text-xs px-3 py-1 rounded-full border transition-all duration-200 shadow-sm hover:shadow
-                ${isViewScore
+                                                        ${isViewScore
                                                             ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700 dark:hover:bg-green-800"
                                                             : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800"
                                                         }`}
@@ -181,7 +177,6 @@ const MyInterviews = () => {
                                             );
                                         })()}
                                     </td>
-
                                 </tr>
                             ))
                         )}
