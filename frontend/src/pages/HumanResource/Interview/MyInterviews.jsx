@@ -38,7 +38,30 @@ const MyInterviews = () => {
         });
     }, [filters, myInterviews]);
 
-    const getUniqueValues = (key) => [...new Set(myInterviews.map((i) => i[key]))].filter(Boolean);
+    // ✅ NEW (jobOpening.title se unique values lega)
+    // 🆕 job titles ko count ke sath return karega: "Frontend Developer (3)"
+    const getUniqueValues = (key) => {
+        if (key === "jobOpening") {
+            const countMap = {};
+
+            myInterviews.forEach((i) => {
+                const title = i.jobOpening?.title;
+                if (title) {
+                    countMap[title] = (countMap[title] || 0) + 1;
+                }
+            });
+
+            return Object.entries(countMap).map(([title, count]) => ({
+                label: `${title} (${count})`,
+                value: title // ← important: filter actual title se chalega
+            }));
+        }
+
+        // round / status ke liye old unique logic
+        return [...new Set(myInterviews.map((i) => i[key]))]
+            .filter(Boolean)
+            .map((item) => ({ label: item, value: item }));
+    };
 
     return (
         <div className="max-w-full px-5 py-5 font-sans text-gray-800 dark:text-gray-100">
@@ -58,7 +81,7 @@ const MyInterviews = () => {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3">
                     {[
-                        { label: "Job", key: "job", options: getUniqueValues("jobOpening")?.map((j) => j?.title) },
+                        { label: "Job", key: "job", options: getUniqueValues("jobOpening") },
                         { label: "Round", key: "round", options: getUniqueValues("round") },
                         { label: "Status", key: "status", options: getUniqueValues("status") },
                     ].map((filter) => (
@@ -70,8 +93,8 @@ const MyInterviews = () => {
                         >
                             <option value="">All {filter.label}</option>
                             {filter.options?.map((opt, idx) => (
-                                <option key={`${opt}-${idx}`} value={opt}>
-                                    {opt}
+                                <option key={idx} value={opt.value}>
+                                    {opt.label}
                                 </option>
                             ))}
                         </select>
