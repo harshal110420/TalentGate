@@ -14,7 +14,7 @@ const Navbar = () => {
     const dispatch = useDispatch();
     const dropdownRef = useRef(null);
     const { user } = useAuth();
-
+    const fetchedRef = useRef(false);
     const { notifications, unread } = useSelector(
         (state) => state.notificationData
     );
@@ -30,8 +30,11 @@ const Navbar = () => {
 
     // Load notifications on mount
     useEffect(() => {
-        if (user?.id) dispatch(fetchNotifications(user.id));
-    }, [user, dispatch]);
+        if (user?.id && !fetchedRef.current) {
+            dispatch(fetchNotifications(user.id));
+            fetchedRef.current = true;
+        }
+    }, [user?.id, dispatch]);
 
     // Close dropdown on outside click
     useEffect(() => {

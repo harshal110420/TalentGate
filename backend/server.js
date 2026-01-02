@@ -34,11 +34,12 @@ global._io.on("connection", (socket) => {
 
 // 4️⃣ notification emitter handler
 const sendNotificationToUser = (userId, notification) => {
-  io.to(`user_${userId}`).emit("notification:new", notification);
+  console.log("emit →", `user_${userId}`, !!global._io);
+  global._io.to(`user_${userId}`).emit("notification:new", notification);
 };
 
 // 5️⃣ make available everywhere
-module.exports = {  sendNotificationToUser };
+module.exports = { io: global._io, sendNotificationToUser };
 
 // 6️⃣ START SERVER
 const startServer = async () => {

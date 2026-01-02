@@ -1,48 +1,62 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 import Dashboard from "./pages/DashboardPage";
 import ModuleLayout from "./pages/ModuleLayout";
 import PrivateRoute from "./components/auth/privateRoute.jsx";
-import { AuthProvider } from "./context/AuthContext";
+import GuestRoute from "./components/auth/GuestRoute.jsx";
 import LoginPage from "./pages/LoginPage";
 import GlobalNotFound from "./components/common/GlobalNotFound.jsx";
-import GuestRoute from "./components/auth/GuestRoute.jsx";
-import { ThemeProvider } from "./context/ThemeContext";
+
 import ExamLoginPage from "./pages/ExamLoginPage";
 import ExamUIPreview from "./pages/ExamUIPreview.jsx";
 import ExamCompleted from "./pages/ExamCompleted.jsx";
 import JobList from "./pages/JobList.jsx";
 
-// -------------- 🔔 Notification + Socket Setup --------------
+import { ThemeProvider } from "./context/ThemeContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+
 import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { socket } from "./socket";                                     // ⭐ socket connect
+import { useDispatch } from "react-redux";
+import { socket } from "./socket";
 import { pushNotification } from "./features/Notification/notificationSlice";
 
-function AppContent() {
+/* ---------------- SOCKET BINDER ---------------- */
+function SocketBinder() {
+  const { user } = useAuth();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth || {});
-  socket.on("connect", () => console.log("🟢 socket connected:", socket.id));
-  socket.on("disconnect", () => console.log("🔴 socket disconnected"));
 
-  // ------ 🔔 Real-time notification listener ------
   useEffect(() => {
     if (!user?.id) return;
 
-    // join private room
-    socket.emit("join_user", user.id);
+    console.log("🚀 SOCKET CONNECT for user:", user.id);
 
-    // listen new notifications
+    socket.connect();
+
+    socket.on("connect", () => {
+      console.log("🟢 SOCKET CONNECTED:", socket.id);
+      socket.emit("join_user", user.id);
+    });
+
     socket.on("notification:new", (data) => {
-      console.log("🔥 Realtime:", data);
+      console.log("🔔 NOTIFICATION RECEIVED:", data);
       dispatch(pushNotification(data));
       toast.info(`${data.title}: ${data.message}`);
     });
 
-    return () => socket.off("notification:new");
-  }, [user, dispatch]);
+    return () => {
+      console.log("🔴 SOCKET CLEANUP");
+      socket.off("notification:new");
+      socket.disconnect();
+    };
+  }, [user?.id, dispatch]);
 
+  return null;
+}
+
+/* ---------------- ROUTES ---------------- */
+function AppRoutes() {
   return (
     <Routes>
       <Route path="/jobs" element={<JobList />} />
@@ -83,18 +97,17 @@ function AppContent() {
   );
 }
 
-// ---------- 🧭 App Wrapper ----------
-function App() {
+/* ---------------- APP ---------------- */
+export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <AppContent />
+          <SocketBinder />
+          <AppRoutes />
           <ToastContainer position="top-center" autoClose={1500} />
         </Router>
       </AuthProvider>
     </ThemeProvider>
   );
 }
-
-export default App;

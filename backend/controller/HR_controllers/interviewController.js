@@ -259,6 +259,17 @@ const createInterview = asyncHandler(async (req, res) => {
   // PANEL MEMBERS (OPTIONAL)
   // =============================
   let panelMembers = [];
+  const interviewDateTime = new Date(`${interviewDate}T${startTime}:00`);
+  const istFormatter = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const formattedISTDateTime = istFormatter.format(interviewDateTime);
 
   if (panel && Array.isArray(panel) && panel.length > 0) {
     const allowedRoles = ["Lead", "Panelist", "Observer"];
@@ -287,16 +298,13 @@ const createInterview = asyncHandler(async (req, res) => {
 
     // --- Notifications ---
     for (const member of panel) {
-      await sendNotification(
-        {
-          userId: member.userId,
-          title: "New Interview Assigned",
-          message: `You have been assigned to Interview Round ${round} for ${candidate.name}`,
-          type: "INTERVIEW",
-          interviewId: interview.id,
-        },
-        io
-      );
+      await sendNotification({
+        userId: member.userId,
+        title: "New Interview Assigned",
+        message: `You have been assigned to Interview Round ${round} for ${candidate.name} on ${formattedISTDateTime} (IST).`,
+        type: "INTERVIEW",
+        interviewId: interview.id,
+      });
     }
   }
 

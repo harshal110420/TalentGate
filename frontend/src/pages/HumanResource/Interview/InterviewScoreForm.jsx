@@ -16,9 +16,7 @@ const InterviewScoreForm = () => {
     const [scoreError, setScoreError] = useState("");
     const [currentInterviewId, setCurrentInterviewId] = useState(null);
 
-    const { myScore, loading } = useSelector(
-        (state) => state.interviewScores
-    );
+    const { myScore, loading } = useSelector((state) => state.interviewScores);
 
     const [form, setForm] = useState({
         score: "",
