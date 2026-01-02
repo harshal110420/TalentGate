@@ -34,10 +34,15 @@ const CustomCalendar = ({ selectedDate, onSelect, scheduledInterviews }) => {
 
     // Filter interviews for current month/day
     const getInterviewsForDay = (day) => {
-        if (!day) return [];
+        if (!day || !Array.isArray(scheduledInterviews)) return [];
+
         const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        return scheduledInterviews?.filter(i => i.interviewDate === dateStr &&
-            ACTIVE_STATUSES.includes(i.status)) || [];
+
+        return scheduledInterviews.filter(
+            (i) =>
+                i.interviewDate === dateStr &&
+                ACTIVE_STATUSES.includes(i.status)
+        );
     };
 
     const formatTo12Hour = (time24) => {

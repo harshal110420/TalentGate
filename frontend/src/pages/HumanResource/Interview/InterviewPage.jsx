@@ -135,6 +135,21 @@ const CandidatesOverviewPage = () => {
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentRows = filteredList.slice(startIndex, startIndex + rowsPerPage);
 
+  useEffect(() => {
+    if (interviewModalOpen) {
+      setInterviewForm({
+        interviewDate: "",
+        startTime: "",
+        endTime: "",
+        round: "",
+        interviewType: "Online",
+        locationOrLink: "",
+        panel: [],
+        notes: "",
+      });
+    }
+  }, [interviewModalOpen]);
+
   const stageBadgeClasses = (stage) => {
     switch (stage) {
       case "Shortlisted for Interview":
@@ -177,6 +192,7 @@ const CandidatesOverviewPage = () => {
       toast.success("Candidate rejected successfully");
 
       dispatch(fetchCandidatesOverview());
+      dispatch(fetchAllInterviews());
     } catch (err) {
       toast.error(err || "Failed to reject candidate");
     } finally {
@@ -241,7 +257,7 @@ const CandidatesOverviewPage = () => {
       toast.success("Interview scheduled successfully");
 
       dispatch(fetchCandidatesOverview());
-
+      dispatch(fetchAllInterviews());
       setInterviewModalOpen(false);
       setSelectedInterviewCandidate(null);
 
@@ -267,7 +283,7 @@ const CandidatesOverviewPage = () => {
       await dispatch(markInterviewCompleted(id)).unwrap();
       toast.success("Interview completed");
       dispatch(fetchCandidatesOverview());
-
+      dispatch(fetchAllInterviews());
     } catch (err) {
       toast.error(err || "Failed to mark interview completed");
     }
@@ -278,7 +294,7 @@ const CandidatesOverviewPage = () => {
       await dispatch(markSelected(id)).unwrap();
       toast.success("Candidate Selected");
       dispatch(fetchCandidatesOverview());
-
+      dispatch(fetchAllInterviews());
     } catch (err) {
       toast.error(err || "Failed to mark candidate selected");
     }
@@ -300,7 +316,7 @@ const CandidatesOverviewPage = () => {
 
       toast.success("Interview cancelled successfully");
       dispatch(fetchCandidatesOverview());
-
+      dispatch(fetchAllInterviews());
       // Reset modal & state
       setCancelModalOpen(false);
       setCancelReason("");
