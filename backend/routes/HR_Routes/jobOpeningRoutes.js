@@ -30,6 +30,9 @@ router.get(
   getAllJobOpenings
 );
 
+// Get All Job Openings
+router.get("/all_jobs", authMiddleware, getAllJobOpenings);
+
 // Get by ID
 router.get(
   "/:id",

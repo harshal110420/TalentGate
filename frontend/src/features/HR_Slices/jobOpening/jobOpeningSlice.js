@@ -1,6 +1,20 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "../../../api/axiosInstance";
 
+export const fetchAllJobOpenings = createAsyncThunk(
+  "jobOpening/fetchAllJobOpenings",
+  async (_, thunkAPI) => {
+    try {
+      const res = await axiosInstance.get("/job-openings/all_jobs");
+      return res.data.data;
+    } catch (err) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Failed to fetch job openings"
+      );
+    }
+  }
+);
+
 export const fetchJobOpenings = createAsyncThunk(
   "jobOpening/fetchAll",
   async (_, thunkAPI) => {
@@ -69,6 +83,18 @@ const jobOpeningSlice = createSlice({
   extraReducers: (builder) => {
     builder
 
+      .addCase(fetchAllJobOpenings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllJobOpenings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.jobOpenings = action.payload;
+      })
+      .addCase(fetchAllJobOpenings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(fetchJobOpenings.pending, (state) => {
         state.loading = true;
         state.error = null;

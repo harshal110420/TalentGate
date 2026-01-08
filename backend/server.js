@@ -20,7 +20,7 @@ global._io = new Server(server, {
 
 // ⬇️ ADD THIS MIDDLEWARE RIGHT AFTER io CREATION
 app.use((req, res, next) => {
-  req.io = io;
+  req.io = global._io;
   next();
 });
 

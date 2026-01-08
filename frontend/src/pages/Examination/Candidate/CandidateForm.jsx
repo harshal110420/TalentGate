@@ -12,7 +12,7 @@ import {
   clearSelectedCandidate,
   resetCandidateStatus,
 } from "../../../features/Candidate/candidateSlice";
-import { fetchJobOpenings } from "../../../features/HR_Slices/jobOpening/jobOpeningSlice";
+import { fetchAllJobOpenings } from "../../../features/HR_Slices/jobOpening/jobOpeningSlice";
 
 import { getModulePathByMenu } from "../../../utils/navigation";
 import SkeletonForm from "../../../components/skeletons/skeletonForm";
@@ -120,7 +120,7 @@ const CandidateForm = () => {
   useEffect(() => {
     dispatch(fetchAllDepartments());
     dispatch(fetchAllExams());
-    dispatch(fetchJobOpenings());   // ✅ MISSING DISPATCH
+    dispatch(fetchAllJobOpenings());   // ✅ MISSING DISPATCH
 
     if (isEditMode) dispatch(fetchCandidateById(id));
     return () => {
