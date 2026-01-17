@@ -1,10 +1,3 @@
-// controllers/permissionController.js (Sequelize Version)
-// const { Permission, Role, Menu, Module } = require("../models");
-// const Permission = require("../models/Permission");
-// const Role = require("../models/Role");
-// const Menu = require("../models/MenuModel");
-// const Module = require("../models/ModuleModel");
-
 const { DashMatrixDB } = require("../models");
 const { Permission, Role, Menu, Module } = DashMatrixDB;
 const VALID_ACTIONS = [

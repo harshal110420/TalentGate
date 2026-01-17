@@ -5,7 +5,7 @@ const checkPermissionUnified = require("../middleware/checkPermissionUnified");
 const {
   getPermissionsByUser,
   createOrUpdateUserPermission,
-} = require("../controller/userpermissionController");
+} = require("../controller/userPermissionController");
 
 // This should match `menus.code` for your permission module
 const MENU_CODE = "user_management";

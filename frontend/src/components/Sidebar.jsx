@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useSelector } from "react-redux";
 import { useState } from "react";
+import { ChevronDown, ChevronUp, Folder } from "lucide-react";
 
 const Sidebar = ({ moduleName, collapsed }) => {
   const location = useLocation();
@@ -13,14 +14,17 @@ const Sidebar = ({ moduleName, collapsed }) => {
 
   if (!user || !modules) return null;
 
-  const currentModule = modules.find((mod) => mod.modulePath === moduleName);
+  const currentModule = modules.find(
+    (mod) => mod.modulePath === moduleName
+  );
 
-  if (!currentModule)
+  if (!currentModule) {
     return (
-      <div className="p-6 text-sm text-red-600 bg-red-100 rounded-md m-4">
+      <div className="m-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
         🚫 No access to this module
       </div>
     );
+  }
 
   const modulePermissions = currentModule.menus;
 
@@ -30,62 +34,95 @@ const Sidebar = ({ moduleName, collapsed }) => {
 
   return (
     <aside
-      className={`${collapsed ? "w-0" : "w-52"
-        } h-full bg-[#1F2937] dark:bg-gray-900 text-white dark:text-gray-100 p-3 shadow-md overflow-y-auto transition-all duration-300 flex-shrink-0`}
+      className={`
+        ${collapsed ? "w-0 opacity-0" : "w-64 opacity-100"}
+        transition-all duration-300
+        h-full flex-shrink-0
+        bg-[#F9FAFB]
+        text-gray-900
+        border-r border-gray-200
+        overflow-y-auto
+      `}
     >
       {!collapsed && (
-        <div className="mb-5">
-          <h2 className="text-lg font-semibold tracking-wide border-b border-gray-700 dark:border-gray-600 pb-2">
+        <div className="px-6 py-5 border-b border-gray-200">
+          <h2 className="text-lg font-semibold tracking-tight">
             {currentModule.moduleName}
           </h2>
+          <p className="text-xs text-gray-500 mt-1">
+            Manage & explore
+          </p>
         </div>
       )}
 
-      <nav className="space-y-3">
+      <nav className="px-4 py-5 space-y-5">
         {Object.keys(modulePermissions).map((category) => {
-          const categoryPermissions = modulePermissions[category];
-
-          // Filter out menus that do not have "view" permission
-          const visibleMenus = categoryPermissions?.filter((menu) =>
-            menu.actions?.includes("view")
+          const visibleMenus = modulePermissions[category]?.filter(
+            (menu) => menu.actions?.includes("view")
           );
 
-          // If no visible menus in this category, don't show it
           if (!visibleMenus?.length) return null;
+
+          const isOpen = openCategory === category;
 
           return (
             <div key={category}>
-              {!collapsed && (
-                <>
-                  <button
-                    onClick={() => toggleCategory(category)}
-                    className="w-full flex justify-between items-center px-4 py-2 rounded-md uppercase tracking-wider text-sm bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    <span>{category}</span>
-                    <span className="text-xs">
-                      {openCategory === category ? "\u25b2" : "\u25bc"}
-                    </span>
-                  </button>
+              {/* Category */}
+              <button
+                onClick={() => toggleCategory(category)}
+                className={`
+                  w-full flex items-center justify-between
+                  px-4 py-2.5 rounded-lg
+                  text-sm font-medium uppercase tracking-wide
+                  bg-white border border-gray-200
+                  hover:bg-gray-50
+                  transition
+                `}
+              >
+                <span className="flex items-center gap-2 text-gray-700">
+                  <Folder size={14} className="text-indigo-500" />
+                  {category}
+                </span>
 
-                  {openCategory === category && (
-                    <ul className="mt-2 pl-4 border-l border-gray-600 dark:border-gray-500 space-y-1">
-                      {visibleMenus.map((subModule) => (
-                        <li key={subModule.menuId}>
-                          <Link
-                            to={`/module/${moduleName}/${subModule.menuId}`}
-                            className={`block px-2 py-2 rounded-md text-xs hover:bg-gray-700 dark:hover:bg-gray-600 transition-all ${location.pathname.includes(subModule.menuId)
-                              ? "bg-gray-700 dark:bg-gray-600 font-semibold"
-                              : "text-gray-300 dark:text-gray-300"
-                              }`}
-                          >
-                            {subModule.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </>
-              )}
+                {isOpen ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </button>
+
+              {/* Menus */}
+              <div
+                className={`
+                  overflow-hidden transition-all duration-300
+                  ${isOpen ? "max-h-96 mt-3" : "max-h-0"}
+                `}
+              >
+                <ul className="pl-5 space-y-1 border-l border-gray-200">
+                  {visibleMenus.map((subModule) => {
+                    const isActive =
+                      location.pathname.includes(subModule.menuId);
+
+                    return (
+                      <li key={subModule.menuId}>
+                        <Link
+                          to={`/module/${moduleName}/${subModule.menuId}`}
+                          className={`
+                            block px-3 py-2 rounded-md text-sm
+                            transition
+                            ${isActive
+                              ? "bg-indigo-50 text-indigo-700 font-medium ring-1 ring-indigo-200"
+                              : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600"
+                            }
+                          `}
+                        >
+                          {subModule.name}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
           );
         })}

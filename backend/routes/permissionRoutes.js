@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const authmiddleware = require("../middleware/authMiddleware");
-const checkPermission = require("../middleware/checkPermission");
-const checkPermissionOrOwnRole = require("../middleware/checkPermissionOrOwnRole");
 const checkPermissionUnified = require("../middleware/checkPermissionUnified"); // <- new flexible middleware
 const {
   getPermissionsByRole,
@@ -21,7 +19,6 @@ const MENU_CODE = "permission_management";
 router.get(
   "/getPermission/:role",
   authmiddleware,
-  // checkPermissionOrOwnRole(MENU_CODE, "view"),
   checkPermissionUnified(MENU_CODE, "view", true),
   getPermissionsByRole
 );
