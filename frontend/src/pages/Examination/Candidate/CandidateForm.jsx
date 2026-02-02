@@ -80,6 +80,7 @@ const initialForm = {
   resumeFile: null,
   resumeUrl: "",
   source: "offline",
+  jobId: "",
   jobCode: "",
   jobTitle: "",
   jobDesignation: "",
@@ -228,12 +229,13 @@ const CandidateForm = () => {
       jobCode: "",
       jobTitle: "",
       jobDesignation: "",
-      jobId: job.id
+      jobId: ""        // or null
     }));
 
     setJobSearch("");
     setFilteredJobs([]);
   };
+
 
   const getOriginalFileName = (url) => {
     if (!url) return "";
