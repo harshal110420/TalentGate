@@ -78,7 +78,7 @@ module.exports = () => {
           "Interview Cancelled",
           "Selected",
           "Rejected",
-          "Hired"
+          "Hired",
         ),
         defaultValue: "Applied",
       },
@@ -134,7 +134,8 @@ module.exports = () => {
           "Assigned",
           "In progress",
           "Completed",
-          "Expired"
+          "Disqualified",
+          "Expired",
         ),
         defaultValue: "Not assigned",
       },
@@ -315,7 +316,7 @@ module.exports = () => {
       timestamps: true, // will generate created_at, updated_at
       createdAt: "created_at",
       updatedAt: "updated_at",
-    }
+    },
   );
 
   return Candidate;

@@ -65,6 +65,7 @@ const applyForJob = asyncHandler(async (req, res) => {
     resumeReviewed: false,
 
     isActive: true,
+    created_by: 0,
   });
 
   res.status(201).json({

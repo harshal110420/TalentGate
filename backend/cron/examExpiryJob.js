@@ -22,16 +22,18 @@ const expireStaleExams = async () => {
     }
 
     console.log(
-      `⚙️ [ExamExpiryCron] Found ${candidates.length} stale candidates.`
+      `⚙️ [ExamExpiryCron] Found ${candidates.length} stale candidates.`,
     );
 
     // Update all in parallel (non-blocking)
     await Promise.all(
       candidates.map(async (candidate) => {
         candidate.examStatus = "Expired";
+        candidate.applicationStage = "Shortlisted for Exam";
+        candidate.examId = null; // VERY IMPORTANT
         await candidate.save();
         console.log(`✅ Candidate ${candidate.id} marked as Expired`);
-      })
+      }),
     );
 
     console.log("🕒 [ExamExpiryCron] Expiry check completed successfully.");
@@ -50,7 +52,7 @@ const startExamExpiryCron = () => {
     {
       scheduled: true,
       timezone: "Asia/Kolkata", // optional but recommended
-    }
+    },
   );
 };
 

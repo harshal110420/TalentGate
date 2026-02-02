@@ -107,9 +107,11 @@ const ExamUIPreview = () => {
   // 🚨 Ultimate Exam Security: Auto-submit on Tab Switch / Blur / ALT+TAB
   useEffect(() => {
     const autoSubmit = (reason) => {
+      if (isSubmittingRef.current) return;
       console.warn(`Exam auto-submitted due to: ${reason}`);
       submitExam(false, true);
     };
+
 
     // 1️⃣ TAB SWITCH (visibility change)
     const handleVisibilityChange = () => {
@@ -140,6 +142,25 @@ const ExamUIPreview = () => {
       window.removeEventListener("blur", handleBlur);
     };
   }, []);
+
+
+  // 🚨 ESC key → Auto-submit exam
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") {
+        if (isSubmittingRef.current) return;
+        submitExam(false, true);
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
+
+
 
   // 🚫 Disable Right-Click, Copy, Paste & Force Fullscreen
   useEffect(() => {
@@ -244,6 +265,7 @@ const ExamUIPreview = () => {
           selectedOption: String(selectedOption).trim(),
         })),
         skippedQuestions,
+        submissionType: fromAuto || fromReload ? "AUTO" : "MANUAL",
       };
 
       const res = await axiosInstance.post("/exam/submit-exam", payload);

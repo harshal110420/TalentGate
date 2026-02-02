@@ -119,7 +119,7 @@ const getCandidateById = asyncHandler(async (req, res) => {
       {
         model: JobOpening,
         as: "job",
-        attributes: ["id", "jobCode", "title"],
+        attributes: ["id", "jobCode", "title", "designation"],
       },
 
       // ===== Exam =====
@@ -242,19 +242,19 @@ const updateCandidate = asyncHandler(async (req, res) => {
   const sanitizedExamId = sanitizeNumber(examId);
   const sanitizedDepartmentId = sanitizeNumber(
     departmentId,
-    candidate.departmentId
+    candidate.departmentId,
   );
   const sanitizedJobId = sanitizeNumber(jobId, candidate.jobId);
   const sanitizedAssignedRecruiterId = sanitizeNumber(
     assignedRecruiterId,
-    candidate.assignedRecruiterId
+    candidate.assignedRecruiterId,
   );
   const sanitizedHrRating = sanitizeNumber(hrRating, candidate.hrRating);
 
   const sanitizedIsActive = sanitizeBoolean(isActive, candidate.isActive);
   const sanitizedResumeReviewed = sanitizeBoolean(
     resumeReviewed,
-    candidate.resumeReviewed
+    candidate.resumeReviewed,
   );
 
   const resumeUrlFinal = req.file?.path || resumeUrl || candidate.resumeUrl;
@@ -274,13 +274,20 @@ const updateCandidate = asyncHandler(async (req, res) => {
   /* ---------------- EXAM ASSIGN VALIDATION ---------------- */
   const effectiveStage = applicationStage || candidate.applicationStage;
 
+  const ALLOWED_EXAM_ASSIGN_STAGES = [
+    "Shortlisted for Exam",
+    "Exam Assigned",
+    "Exam Completed", // optional (if re-test allowed)
+  ];
+
   if (
-    sanitizedExamId && // exam assign ho raha hai
-    sanitizedExamId !== candidate.examId && // exam change ho raha hai
-    effectiveStage !== "Shortlisted for Exam"
+    sanitizedExamId &&
+    sanitizedExamId !== candidate.examId &&
+    !ALLOWED_EXAM_ASSIGN_STAGES.includes(candidate.applicationStage)
   ) {
     return res.status(400).json({
-      message: "Exam can be assigned only to SHORTLISTED candidates.",
+      message:
+        "Exam can be assigned only to candidates shortlisted for exam or already in exam stage.",
     });
   }
 
@@ -399,7 +406,7 @@ const sendExamMailToCandidate = async (req, res) => {
         examId: candidate.examId,
       },
       process.env.JWT_SECRET_EXAM,
-      { expiresIn: "1h" }
+      { expiresIn: "1h" },
     );
     const baseUrl = process.env.FRONTEND_URL || "https://talentgate.in/exam";
     const examLink = `${baseUrl}/exam-login?token=${token}`;

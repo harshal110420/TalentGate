@@ -26,7 +26,7 @@ const createExam = asyncHandler(async (req, res) => {
   }
   const formattedQuestionIds = questionIds
     .map((q) =>
-      typeof q === "object" && q.questionId ? Number(q.questionId) : Number(q)
+      typeof q === "object" && q.questionId ? Number(q.questionId) : Number(q),
     )
     .filter((id) => !isNaN(id));
 
@@ -222,7 +222,9 @@ const updateExam = asyncHandler(async (req, res) => {
   if (questionIds) {
     formattedQuestionIds = questionIds
       .map((q) =>
-        typeof q === "object" && q.questionId ? Number(q.questionId) : Number(q)
+        typeof q === "object" && q.questionId
+          ? Number(q.questionId)
+          : Number(q),
       )
       .filter((id) => !isNaN(id));
   }
@@ -259,7 +261,8 @@ const submitExam = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const candidate = req.candidate;
-    const { responses } = req.body;
+    const { responses, submissionType } = req.body;
+    const finalSubmissionType = submissionType === "AUTO" ? "AUTO" : "MANUAL";
 
     if (!responses || !Array.isArray(responses)) {
       await transaction.rollback();
@@ -274,7 +277,10 @@ const submitExam = async (req, res) => {
     }
 
     // ✅ Prevent duplicate submissions
-    if (candidate.examStatus === "Completed") {
+    if (
+      candidate.examStatus === "Completed" ||
+      candidate.examStatus === "Disqualified"
+    ) {
       await transaction.rollback();
       return res.status(200).json({
         message: "Exam already submitted earlier.",
@@ -300,7 +306,7 @@ const submitExam = async (req, res) => {
     for (const q of questions) {
       const correctValue = q.correct ?? q.correctAnswer;
       const userResponse = responses.find(
-        (r) => Number(r.questionId) === Number(q.id)
+        (r) => Number(r.questionId) === Number(q.id),
       );
 
       const baseResponse = {
@@ -351,14 +357,21 @@ const submitExam = async (req, res) => {
         resultStatus,
         startedAt: new Date(),
         submittedAt: new Date(),
+        submissionType: finalSubmissionType,
       },
-      { transaction }
+      { transaction },
     );
 
     // ✅ Update candidate safely
-    candidate.examStatus = "Completed";
-    candidate.applicationStage = "Exam Completed";
-    candidate.examCompletedAt = new Date();
+    if (finalSubmissionType === "AUTO") {
+      candidate.examStatus = "Disqualified";
+      candidate.applicationStage = "Disqualified";
+      candidate.examCompletedAt = new Date();
+    } else {
+      candidate.examStatus = "Completed";
+      candidate.applicationStage = "Exam Completed";
+      candidate.examCompletedAt = new Date();
+    }
     await candidate.save({ transaction });
 
     await transaction.commit();

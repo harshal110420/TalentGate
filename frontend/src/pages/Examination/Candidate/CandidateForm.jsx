@@ -102,6 +102,7 @@ const CandidateForm = () => {
     (s) => s.jobOpening
   );
   const { selected, loading } = useSelector((state) => state.candidate);
+  console.log("selected candidate data:", selected)
   const departments = useSelector((state) => state.department.list);
   const deptLoading = useSelector((state) => state.department.loading);
   const exams = useSelector((state) => state.exam.list);
@@ -146,9 +147,10 @@ const CandidateForm = () => {
         isActive: typeof selected.isActive === "boolean" ? selected.isActive : true,
         resumeUrl: selected.resumeUrl || "",
         resumeFile: null,
-        jobCode: selected.jobCode || "",
-        jobTitle: selected.jobTitle || "",
-        jobDesignation: selected.jobDesignation || "",
+        jobCode: selected.job?.jobCode || "",
+        jobTitle: selected.job?.title || "",
+        jobDesignation: selected.job?.designation || "",
+        jobId: selected.job?.id || "",
         // applicationStage: selected.applicationStage || "Applied",
         assignedRecruiterId: selected.assignedRecruiterId || "",
         remarks: selected.remarks || "",
