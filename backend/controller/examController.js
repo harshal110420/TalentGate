@@ -258,25 +258,37 @@ const toggleActiveExam = asyncHandler(async (req, res) => {
 });
 
 const submitExam = async (req, res) => {
+  console.log("🔥 submitExam HIT", {
+    submissionType: req.body.submissionType,
+  });
+
   const transaction = await sequelize.transaction();
+
   try {
     const candidate = req.candidate;
     const { responses, submissionType } = req.body;
     const finalSubmissionType = submissionType === "AUTO" ? "AUTO" : "MANUAL";
 
+    // ✅ Basic validation
     if (!responses || !Array.isArray(responses)) {
       await transaction.rollback();
       return res.status(400).json({ message: "Missing or invalid responses" });
     }
 
-    // ✅ Double-check candidate and exam link
-    const exam = await candidate.getExam();
+    // ✅ Fetch & validate exam assignment
+    const exam = await candidate.getExam({ transaction });
     if (!exam || candidate.examId !== exam.id) {
       await transaction.rollback();
       return res.status(403).json({ message: "Invalid exam assignment" });
     }
 
-    // ✅ Prevent duplicate submissions
+    // 🔐 CRITICAL FIX: Lock candidate FIRST (before any status checks)
+    await candidate.reload({
+      lock: transaction.LOCK.UPDATE,
+      transaction,
+    });
+
+    // ✅ Prevent duplicate submissions (after lock)
     if (
       candidate.examStatus === "Completed" ||
       candidate.examStatus === "Disqualified"
@@ -287,11 +299,8 @@ const submitExam = async (req, res) => {
       });
     }
 
-    // ✅ Lock the candidate row to prevent parallel writes
-    await candidate.reload({ lock: transaction.LOCK.UPDATE, transaction });
-
-    // ✅ Get all related questions
-    const questionIds = exam.questionIds.map((id) => parseInt(id, 10));
+    // ✅ Fetch exam questions
+    const questionIds = exam.questionIds.map((id) => Number(id));
     const questions = await QuestionBank.findAll({
       where: { id: { [Op.in]: questionIds } },
       transaction,
@@ -303,6 +312,7 @@ const submitExam = async (req, res) => {
     let skipped = 0;
     const finalResponses = [];
 
+    // ✅ Evaluate responses
     for (const q of questions) {
       const correctValue = q.correct ?? q.correctAnswer;
       const userResponse = responses.find(
@@ -312,7 +322,7 @@ const submitExam = async (req, res) => {
       const baseResponse = {
         questionId: q.id,
         question: q.question,
-        correctAnswer: correctValue,
+        correctAnswer: String(correctValue).trim(),
         selectedOption: userResponse?.selectedOption ?? null,
       };
 
@@ -323,6 +333,7 @@ const submitExam = async (req, res) => {
       }
 
       attempted++;
+
       const userSel = String(userResponse.selectedOption).trim();
       const correctStr = String(correctValue).trim();
 
@@ -332,13 +343,15 @@ const submitExam = async (req, res) => {
       finalResponses.push(baseResponse);
     }
 
+    // ✅ Scoring
     const positiveMarking = exam.positiveMarking || 0;
     const negativeMarking = exam.negativeMarking || 0;
+
     const score =
       correctAnswers * positiveMarking - incorrectAnswers * negativeMarking;
 
     const totalMarks = questionIds.length * positiveMarking;
-    const percentage = (score / totalMarks) * 100;
+    const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
     const passPercentage = 50;
     const resultStatus = percentage >= passPercentage ? "pass" : "fail";
 
@@ -355,25 +368,24 @@ const submitExam = async (req, res) => {
         candidateResponses: finalResponses,
         score,
         resultStatus,
+        submissionType: finalSubmissionType,
         startedAt: new Date(),
         submittedAt: new Date(),
-        submissionType: finalSubmissionType,
       },
       { transaction },
     );
 
-    // ✅ Update candidate safely
-    if (finalSubmissionType === "AUTO") {
-      candidate.examStatus = "Disqualified";
-      candidate.applicationStage = "Disqualified";
-      candidate.examCompletedAt = new Date();
-    } else {
-      candidate.examStatus = "Completed";
-      candidate.applicationStage = "Exam Completed";
-      candidate.examCompletedAt = new Date();
-    }
+    // 🚨 FINAL & MOST IMPORTANT FIX
+    // AUTO submission ALWAYS forces Disqualified
+    candidate.examStatus =
+      finalSubmissionType === "AUTO" ? "Disqualified" : "Completed";
+
+    candidate.applicationStage = "Exam Completed";
+    candidate.examCompletedAt = new Date();
+
     await candidate.save({ transaction });
 
+    // ✅ Commit once everything is safe
     await transaction.commit();
 
     return res.status(200).json({
@@ -384,15 +396,15 @@ const submitExam = async (req, res) => {
   } catch (err) {
     console.error("❌ Submit exam error:", err);
 
-    // Prevent rollback errors from throwing again
+    // 🔄 Safe rollback
     try {
       await transaction.rollback();
     } catch {}
 
-    // ✅ Handle duplicate commit or timeout gracefully
+    // ✅ Idempotent handling (duplicate / parallel AUTO submits)
     if (
       err.name === "SequelizeUniqueConstraintError" ||
-      err.message.includes("already submitted")
+      err.message?.includes("already submitted")
     ) {
       return res.status(200).json({
         message: "Exam already submitted or processed.",

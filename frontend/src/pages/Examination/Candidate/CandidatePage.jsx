@@ -331,6 +331,8 @@ const CandidatePage = () => {
         return "Assigned";
       case "In progress":
         return "In Progress";
+      case "Disqualified":
+        return "Disqualified";
       case "Completed":
         return "Completed";
       case "Expired":
