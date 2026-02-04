@@ -14,6 +14,7 @@ import useUnsavedChangesWarning from "../hook/useUnsavedChangesWarning";
 import { Home, Menu } from "lucide-react";
 import ModuleNotFound from "../components/common/ModuleNotFound";
 import ProfileIcon from "../components/common/ProfileIcon";
+import NotificationBell from "../components/common/NotificationBell";
 
 const ModuleLayout = () => {
   const { user } = useAuth();
@@ -57,7 +58,7 @@ const ModuleLayout = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
 
-      
+
       {/* Sidebar */}
       <Sidebar
         moduleName={moduleName}
@@ -89,7 +90,8 @@ const ModuleLayout = () => {
           </div>
 
           {/* Right: Profile Icon */}
-          <div className="flex items-center px-2">
+          <div className="flex items-center gap-4 px-2">
+            <NotificationBell />
             <ProfileIcon />
           </div>
         </div>

@@ -13,7 +13,7 @@ const InterviewScoreReview = () => {
     const navigate = useNavigate();
     const [showLockModal, setShowLockModal] = useState(false);
 
-    const { allScores, loading } = useSelector((state) => state.interviewScore);
+    const { allScores, loading } = useSelector((state) => state.interviewScores);
     console.log("all scores:", allScores)
     useEffect(() => {
         dispatch(fetchAllScores(interviewId));

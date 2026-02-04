@@ -31,11 +31,11 @@ const LoginForm = () => {
   return (
     <>
       <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">
-        Welcome Back 👋
+        Welcome Back
       </h2>
-      {/* <p className="text-sm text-gray-500 text-center mb-6">
-        Sign in to continue to InvoTrack
-      </p> */}
+      <p className="text-sm text-gray-500 text-center mb-6">
+        Sign in to continue to Talent Gate.
+      </p>
 
       {error && (
         <div className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 text-sm rounded-md p-2 mb-4 text-center">
