@@ -18,7 +18,7 @@ module.exports = () => {
       isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
     },
     {
-      tableName: "questionBank",
+      tableName: "questionbank",
       timestamps: false,
     }
   );
