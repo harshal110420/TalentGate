@@ -37,7 +37,7 @@ module.exports = () => {
 
       resumeUrl: {
         type: DataTypes.STRING,
-        allowNull: true, // Cloudinary link
+        allowNull: true,
       },
 
       source: {
@@ -64,18 +64,15 @@ module.exports = () => {
         allowNull: true,
       },
 
+      // 🔑 SUMMARY FIELD (no dates here)
       applicationStage: {
         type: DataTypes.ENUM(
           "Applied",
           "Resume Reviewed",
-          "Shortlisted for Exam",
           "Exam Assigned",
           "Exam Completed",
-          "Shortlisted for Interview",
           "Interview Scheduled",
-          "Interview Rescheduled",
           "Interview Completed",
-          "Interview Cancelled",
           "Selected",
           "Rejected",
           "Hired",
@@ -84,24 +81,11 @@ module.exports = () => {
       },
 
       /* =====================
-         OFFER / JOINING
-       ===================== */
-
-      joiningDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
-      /* =====================
-          SCREENING / HR TOOLS
+          HR / SCREENING
       ====================== */
 
       assignedRecruiterId: {
         type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-
-      remarks: {
-        type: DataTypes.TEXT,
         allowNull: true,
       },
 
@@ -110,186 +94,29 @@ module.exports = () => {
         defaultValue: false,
       },
 
-      hrRating: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        validate: {
-          min: 1,
-          max: 5,
-        },
-      },
-
-      /* =====================
-          EXAM WORKFLOW
-      ====================== */
-
-      examId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-
-      examStatus: {
-        type: DataTypes.ENUM(
-          "Not assigned",
-          "Assigned",
-          "In progress",
-          "Completed",
-          "Disqualified",
-          "Expired",
-        ),
-        defaultValue: "Not assigned",
-      },
-
-      lastMailSentAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-
-      /* =====================
-          STAGE TIMELINE
-        ====================== */
-
       resumeReviewedAt: {
         type: DataTypes.DATE,
         allowNull: true,
-        get() {
-          const raw = this.getDataValue("resumeReviewedAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
       },
 
-      shortlistedForExamAt: {
-        type: DataTypes.DATE,
+      remarks: {
+        type: DataTypes.TEXT,
         allowNull: true,
-        get() {
-          const raw = this.getDataValue("shortlistedForExamAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
       },
 
-      shortlistedForInterviewAt: {
-        type: DataTypes.DATE,
+      hrRating: {
+        type: DataTypes.INTEGER,
         allowNull: true,
-        get() {
-          const raw = this.getDataValue("shortlistedForInterviewAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
+        validate: { min: 1, max: 5 },
       },
 
-      examAssignedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        get() {
-          const raw = this.getDataValue("examAssignedAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
-      },
+      /* =====================
+          OFFER / JOINING
+      ====================== */
 
-      examReassignedAt: {
-        type: DataTypes.DATE,
+      joiningDate: {
+        type: DataTypes.DATEONLY,
         allowNull: true,
-        get() {
-          const raw = this.getDataValue("examReassignedAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
-      },
-
-      examCompletedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        get() {
-          const raw = this.getDataValue("examCompletedAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
-      },
-
-      interviewScheduledAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        get() {
-          const raw = this.getDataValue("interviewScheduledAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
-      },
-
-      interviewCompletedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        get() {
-          const raw = this.getDataValue("interviewCompletedAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
-      },
-
-      interviewCancledAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        get() {
-          const raw = this.getDataValue("interviewCancledAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
-      },
-
-      selectedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        get() {
-          const raw = this.getDataValue("selectedAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
-      },
-
-      rejectedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        get() {
-          const raw = this.getDataValue("rejectedAt");
-          return raw
-            ? new Date(raw).toLocaleString("en-IN", {
-                timeZone: "Asia/Kolkata",
-              })
-            : null;
-        },
       },
 
       /* =====================
@@ -313,7 +140,7 @@ module.exports = () => {
     },
     {
       tableName: "candidates",
-      timestamps: true, // will generate created_at, updated_at
+      timestamps: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
     },
