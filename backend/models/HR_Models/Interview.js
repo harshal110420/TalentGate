@@ -52,7 +52,7 @@ module.exports = () => {
           "Completed",
           "Cancelled",
           "Rescheduled",
-          "No Show"
+          "No Show",
         ),
         defaultValue: "Scheduled",
       },
@@ -73,7 +73,7 @@ module.exports = () => {
       },
 
       createdBy: {
-        type: DataTypes.INTEGER, // HR userId
+        type: DataTypes.INTEGER,
         allowNull: false,
       },
 
@@ -95,7 +95,7 @@ module.exports = () => {
     {
       tableName: "interviews",
       timestamps: true,
-    }
+    },
   );
 
   return Interview;

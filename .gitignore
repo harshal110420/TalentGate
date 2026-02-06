@@ -3,7 +3,6 @@ backend/node_modules/
 backend/.env
 backend/*.log
 backend/models/*.sqlite
-backend/config/config.js
 backend/*.bak
 *.sql
 
